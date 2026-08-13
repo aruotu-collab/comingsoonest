@@ -34,7 +34,12 @@ export default async function WatchingPage() {
     .map((w) => ({ watch: w, launch: getLaunchById(w.launchId) }))
     .filter((x): x is { watch: (typeof watches)[0]; launch: NonNullable<ReturnType<typeof getLaunchById>> } =>
       Boolean(x.launch)
-    );
+    )
+    .sort((a, b) => {
+      const at = a.launch.expectedAt ? new Date(a.launch.expectedAt).getTime() : Number.POSITIVE_INFINITY;
+      const bt = b.launch.expectedAt ? new Date(b.launch.expectedAt).getTime() : Number.POSITIVE_INFINITY;
+      return at - bt;
+    });
 
   return (
     <AppShell active="/watching">
@@ -100,7 +105,7 @@ export default async function WatchingPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {launches.map(({ launch, watch }) => (
             <div key={launch.id}>
-              <LaunchCard launch={launch} watching hasSession />
+              <LaunchCard launch={launch} watching hasSession emphasizeCountdown />
               <p className="mt-2 px-1 text-xs text-[var(--muted)]">
                 Intensity: {watch.intensity.replaceAll("_", " ")}
               </p>

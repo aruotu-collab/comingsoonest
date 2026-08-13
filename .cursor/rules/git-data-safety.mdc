@@ -1,0 +1,18 @@
+---
+description: Prevent accidental loss of git history, migrations, DB, and secrets
+alwaysApply: true
+---
+
+# Git and data safety
+
+- Do not `git push --force`, `git reset --hard`, or `git clean -fd` unless the user explicitly asks.
+- Do not delete or rewrite `prisma/migrations/`.
+- Do not drop/truncate production Postgres or delete the Prisma project.
+- Never commit `.env`, `.env.local`, API keys, or connection strings.
+- Push finished work so it is not only on one machine.
+
+## Where data lives
+
+- Code + seed + migrations → GitHub
+- Watches / users / sessions → Prisma Postgres (not git)
+- Secrets → Vercel env + `.env.local` only; keep `.env.example` as key names only

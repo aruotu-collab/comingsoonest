@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { AppShell } from "@/components/AppShell";
+import { Countdown } from "@/components/Countdown";
 import { calendarDays, brandName, yearHeatmap } from "@/lib/repo";
 import { getWatches } from "@/lib/watches";
 import { STATUS_LABEL } from "@/lib/types";
@@ -127,7 +128,7 @@ export default async function CalendarPage({
                             href={`/launch/${l.slug}`}
                             className="flex items-start justify-between gap-3 rounded-xl bg-white/5 px-3 py-2 hover:bg-[var(--accent-soft)]"
                           >
-                            <div>
+                            <div className="min-w-0">
                               <div className="font-medium">
                                 {brandName(l)} — {l.name}
                               </div>
@@ -135,9 +136,19 @@ export default async function CalendarPage({
                                 {STATUS_LABEL[l.status]} · Launch {l.launchScore} ·{" "}
                                 {l.watchers.toLocaleString()} watching
                               </div>
+                              <div className="mt-1">
+                                <Countdown
+                                  targetAt={l.expectedAt}
+                                  status={l.status}
+                                  fallbackLabel={l.expectedLabel}
+                                  size="sm"
+                                />
+                              </div>
                             </div>
                             {watchIds.has(l.id) && (
-                              <span className="text-xs text-[var(--accent)]">Watching</span>
+                              <span className="shrink-0 text-xs text-[var(--accent)]">
+                                Watching
+                              </span>
                             )}
                           </Link>
                         </li>

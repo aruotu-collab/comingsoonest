@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { AppShell } from "@/components/AppShell";
+import { Countdown } from "@/components/Countdown";
 import { ScorePills } from "@/components/ScorePills";
 import { WatchButton } from "@/components/WatchButton";
 import { brandName, getBrandById, getLaunch, scoreBand } from "@/lib/repo";
@@ -74,6 +75,16 @@ export default async function LaunchPage({
               </a>
             )}
           </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-black/25 p-4 md:p-5">
+          <Countdown
+            targetAt={launch.expectedAt}
+            status={launch.status}
+            fallbackLabel={launch.expectedLabel}
+            size="lg"
+          />
+          <p className="mt-2 text-sm text-[var(--muted)]">{launch.expectedLabel}</p>
         </div>
 
         <div className="mt-6">

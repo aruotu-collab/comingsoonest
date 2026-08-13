@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { Countdown } from "@/components/Countdown";
 import { LaunchCard } from "@/components/LaunchCard";
 import { LiveTape } from "@/components/LiveTape";
 import {
@@ -203,6 +204,14 @@ export default async function DiscoverPage() {
                 <div className="text-sm text-[var(--muted)]">
                   Wait — {l.confidence}% · {l.expectedLabel}
                   {l.successorOf ? ` · replaces ${l.successorOf}` : ""}
+                </div>
+                <div className="mt-1">
+                  <Countdown
+                    targetAt={l.expectedAt}
+                    status={l.status}
+                    fallbackLabel={l.expectedLabel}
+                    size="sm"
+                  />
                 </div>
               </Link>
             ))

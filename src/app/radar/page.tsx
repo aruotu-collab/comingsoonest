@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { Countdown } from "@/components/Countdown";
 import { getLaunches, openingNearYou, brandName } from "@/lib/repo";
 
 export default async function RadarPage() {
@@ -99,8 +100,16 @@ export default async function RadarPage() {
                   <Link href={`/launch/${l.slug}`} className="hover:text-[var(--accent)]">
                     {brandName(l)} · {l.name}
                   </Link>
-                  <div className="text-xs text-[var(--muted)]">
-                    Launch {l.launchScore} · {l.watchers.toLocaleString()} watching
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted)]">
+                    <Countdown
+                      targetAt={l.expectedAt}
+                      status={l.status}
+                      fallbackLabel={l.expectedLabel}
+                      size="sm"
+                    />
+                    <span>
+                      · Launch {l.launchScore} · {l.watchers.toLocaleString()} watching
+                    </span>
                   </div>
                 </li>
               ))}
@@ -120,10 +129,18 @@ export default async function RadarPage() {
           {near.map((l) => (
             <li key={l.id}>
               <Link href={`/launch/${l.slug}`} className="block rounded-xl bg-white/5 px-3 py-3 hover:bg-[var(--accent-soft)]">
-                <div className="font-medium">
-                  {l.name} · {l.nearMiles} mi
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="font-medium">
+                    {l.name} · {l.nearMiles} mi
+                  </div>
+                  <Countdown
+                    targetAt={l.expectedAt}
+                    status={l.status}
+                    fallbackLabel={l.expectedLabel}
+                    size="sm"
+                  />
                 </div>
-                <div className="text-sm text-[var(--muted)]">
+                <div className="mt-1 text-sm text-[var(--muted)]">
                   {l.expectedLabel} · {l.watchers.toLocaleString()} locals watching
                 </div>
               </Link>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Launch } from "@/lib/types";
 import { STATUS_LABEL } from "@/lib/types";
 import { brandName, scoreBand } from "@/lib/repo";
+import { Countdown } from "@/components/Countdown";
 import { ScorePills } from "@/components/ScorePills";
 import { WatchButton } from "@/components/WatchButton";
 
@@ -10,11 +11,13 @@ export function LaunchCard({
   watching,
   badge,
   hasSession,
+  emphasizeCountdown,
 }: {
   launch: Launch;
   watching: boolean;
   badge?: string;
   hasSession?: boolean;
+  emphasizeCountdown?: boolean;
 }) {
   return (
     <article className="panel rise flex h-full flex-col gap-3 rounded-2xl p-4">
@@ -39,6 +42,14 @@ export function LaunchCard({
           compact
         />
       </div>
+
+      <Countdown
+        targetAt={launch.expectedAt}
+        status={launch.status}
+        fallbackLabel={launch.expectedLabel}
+        size={emphasizeCountdown ? "md" : "sm"}
+        className={emphasizeCountdown ? "w-full rounded-xl bg-black/20 px-3 py-2" : undefined}
+      />
 
       <ScorePills
         launch={launch.launchScore}

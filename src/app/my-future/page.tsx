@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { Countdown } from "@/components/Countdown";
 import { getLaunchById, brandName } from "@/lib/repo";
 import { getProfile, getWatches } from "@/lib/watches";
 import { addDays, isBefore, parseISO } from "date-fns";
@@ -82,10 +83,17 @@ export default async function MyFuturePage() {
             ) : (
               <ul className="mt-3 space-y-2 text-sm">
                 {list.map((l) => (
-                  <li key={l.id}>
+                  <li key={l.id} className="flex items-start justify-between gap-2">
                     <Link href={`/launch/${l.slug}`} className="hover:text-[var(--accent)]">
                       {brandName(l)} — {l.name}
                     </Link>
+                    <Countdown
+                      targetAt={l.expectedAt}
+                      status={l.status}
+                      fallbackLabel={l.expectedLabel}
+                      size="sm"
+                      className="shrink-0"
+                    />
                   </li>
                 ))}
               </ul>
