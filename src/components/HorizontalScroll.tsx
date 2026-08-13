@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 
+const DRAG_THRESHOLD = 8;
+
 export function HorizontalScroll({
   children,
   className = "",
@@ -19,11 +21,18 @@ export function HorizontalScroll({
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{
-    active: boolean;
+    pointerId: number | null;
     startX: number;
     startScroll: number;
-    moved: boolean;
-  }>({ active: false, startX: 0, startScroll: 0, moved: false });
+    dragging: boolean;
+    suppressClick: boolean;
+  }>({
+    pointerId: null,
+    startX: 0,
+    startScroll: 0,
+    dragging: false,
+    suppressClick: false,
+  });
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
 
@@ -42,7 +51,6 @@ export function HorizontalScroll({
     const onScroll = () => updateEdges();
     const onWheel = (e: WheelEvent) => {
       if (el.scrollWidth <= el.clientWidth) return;
-      // Prefer mapping vertical wheel to horizontal when hovering the strip
       if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
       e.preventDefault();
       el.scrollLeft += e.deltaY + e.deltaX;
@@ -63,6 +71,23 @@ export function HorizontalScroll({
 
   function scrollBy(dx: number) {
     scrollerRef.current?.scrollBy({ left: dx, behavior: "smooth" });
+  }
+
+  function endDrag(el: HTMLDivElement, pointerId: number) {
+    if (drag.current.pointerId !== pointerId) return;
+    if (drag.current.dragging) {
+      drag.current.suppressClick = true;
+      // Clear after the click event that follows pointerup
+      window.setTimeout(() => {
+        drag.current.suppressClick = false;
+      }, 0);
+    }
+    if (el.hasPointerCapture(pointerId)) {
+      el.releasePointerCapture(pointerId);
+    }
+    drag.current.pointerId = null;
+    drag.current.dragging = false;
+    el.classList.remove("cursor-grabbing");
   }
 
   return (
@@ -95,39 +120,46 @@ export function HorizontalScroll({
         onPointerDown={(e) => {
           if (e.pointerType !== "mouse" || e.button !== 0) return;
           const el = scrollerRef.current;
-          if (!el) return;
+          if (!el || el.scrollWidth <= el.clientWidth) return;
+          // Record intent only — do not capture yet so link clicks still work
           drag.current = {
-            active: true,
+            pointerId: e.pointerId,
             startX: e.clientX,
             startScroll: el.scrollLeft,
-            moved: false,
+            dragging: false,
+            suppressClick: false,
           };
-          el.setPointerCapture(e.pointerId);
         }}
         onPointerMove={(e) => {
-          if (!drag.current.active) return;
           const el = scrollerRef.current;
-          if (!el) return;
+          if (!el || drag.current.pointerId !== e.pointerId) return;
           const dx = e.clientX - drag.current.startX;
-          if (Math.abs(dx) > 4) drag.current.moved = true;
+          if (!drag.current.dragging) {
+            if (Math.abs(dx) < DRAG_THRESHOLD) return;
+            drag.current.dragging = true;
+            el.setPointerCapture(e.pointerId);
+            el.classList.add("cursor-grabbing");
+          }
           el.scrollLeft = drag.current.startScroll - dx;
           updateEdges();
         }}
-        onPointerUp={() => {
-          drag.current.active = false;
+        onPointerUp={(e) => {
+          const el = scrollerRef.current;
+          if (!el) return;
+          endDrag(el, e.pointerId);
         }}
-        onPointerCancel={() => {
-          drag.current.active = false;
+        onPointerCancel={(e) => {
+          const el = scrollerRef.current;
+          if (!el) return;
+          endDrag(el, e.pointerId);
         }}
         onClickCapture={(e) => {
-          // After a drag, suppress the accidental link click
-          if (drag.current.moved) {
-            e.preventDefault();
-            e.stopPropagation();
-            drag.current.moved = false;
-          }
+          if (!drag.current.suppressClick) return;
+          e.preventDefault();
+          e.stopPropagation();
+          drag.current.suppressClick = false;
         }}
-        className={`flex cursor-grab gap-1.5 overflow-x-auto px-4 py-2.5 active:cursor-grabbing md:px-6 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.25)_transparent] ${className}`}
+        className={`flex cursor-grab gap-1.5 overflow-x-auto px-4 py-2.5 md:px-6 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.25)_transparent] ${className}`}
       >
         {children}
       </div>
