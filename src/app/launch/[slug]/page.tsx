@@ -4,6 +4,7 @@ import { format, parseISO } from "date-fns";
 import { AppShell } from "@/components/AppShell";
 import { Countdown } from "@/components/Countdown";
 import { ScorePills } from "@/components/ScorePills";
+import { ShareButton } from "@/components/ShareButton";
 import { WatchButton } from "@/components/WatchButton";
 import { brandName, getBrandById, getLaunch, scoreBand } from "@/lib/repo";
 import { STATUS_LABEL } from "@/lib/types";
@@ -26,6 +27,10 @@ export default async function LaunchPage({
   const watch = watches.find((w) => w.launchId === launch.id);
   const confirmed = launch.sources.filter((s) => s.confirmed).length;
   const signalPct = launch.confidence;
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://comingsoonest.com";
+  const shareUrl = `${siteUrl.replace(/\/$/, "")}/launch/${launch.slug}`;
+  const shareTitle = `${brandName(launch)} — ${launch.name}`;
+  const shareText = `Watching this on Coming Soonest: ${shareTitle} (${launch.expectedLabel})`;
 
   return (
     <AppShell>
@@ -49,11 +54,18 @@ export default async function LaunchPage({
             <p className="mt-4 max-w-2xl text-[var(--muted)]">{launch.summary}</p>
           </div>
           <div className="flex flex-col items-end gap-3">
-            <WatchButton
-              launchId={launch.id}
-              watching={Boolean(watch)}
-              hasSession={Boolean(profile.email)}
-            />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <WatchButton
+                launchId={launch.id}
+                watching={Boolean(watch)}
+                hasSession={Boolean(profile.email)}
+              />
+              <ShareButton
+                title={shareTitle}
+                text={shareText}
+                url={shareUrl}
+              />
+            </div>
             {launch.status === "live" && launch.buyUrl && (
               <a
                 href={launch.buyUrl}
