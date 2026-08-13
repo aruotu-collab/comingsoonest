@@ -9,7 +9,11 @@ export function RemoveRuleButton({ id }: { id: string }) {
     <button
       type="button"
       disabled={pending}
-      onClick={() => start(() => removeWatchRule(id))}
+      onClick={() =>
+        start(async () => {
+          await removeWatchRule(id);
+        })
+      }
       className="text-[var(--muted)] hover:text-[var(--danger)]"
     >
       Remove

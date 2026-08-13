@@ -35,7 +35,11 @@ export function IntensityForm({
           key={l.id}
           type="button"
           disabled={pending}
-          onClick={() => start(() => updateWatchIntensity(launchId, l.id))}
+          onClick={() =>
+            start(async () => {
+              await updateWatchIntensity(launchId, l.id);
+            })
+          }
           className={`rounded-xl border px-3 py-3 text-left transition ${
             intensity === l.id
               ? "border-[var(--accent)] bg-[var(--accent-soft)]"

@@ -6,7 +6,7 @@ import { ScorePills } from "@/components/ScorePills";
 import { WatchButton } from "@/components/WatchButton";
 import { brandName, getBrandById, getLaunch, scoreBand } from "@/lib/repo";
 import { STATUS_LABEL } from "@/lib/types";
-import { getWatches } from "@/lib/watches";
+import { getProfile, getWatches } from "@/lib/watches";
 import { IntensityForm } from "@/components/IntensityForm";
 import { WatchRuleForm } from "@/components/WatchRuleForm";
 
@@ -21,6 +21,7 @@ export default async function LaunchPage({
 
   const brand = getBrandById(launch.brandId);
   const watches = await getWatches();
+  const profile = await getProfile();
   const watch = watches.find((w) => w.launchId === launch.id);
   const confirmed = launch.sources.filter((s) => s.confirmed).length;
   const signalPct = launch.confidence;
@@ -47,7 +48,11 @@ export default async function LaunchPage({
             <p className="mt-4 max-w-2xl text-[var(--muted)]">{launch.summary}</p>
           </div>
           <div className="flex flex-col items-end gap-3">
-            <WatchButton launchId={launch.id} watching={Boolean(watch)} />
+            <WatchButton
+              launchId={launch.id}
+              watching={Boolean(watch)}
+              hasSession={Boolean(profile.email)}
+            />
             {launch.status === "live" && launch.buyUrl && (
               <a
                 href={launch.buyUrl}

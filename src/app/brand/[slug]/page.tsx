@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { LaunchCard } from "@/components/LaunchCard";
 import { getBrand, launchesByBrand } from "@/lib/repo";
-import { getWatches } from "@/lib/watches";
+import { getProfile, getWatches } from "@/lib/watches";
 import { WatchRuleForm } from "@/components/WatchRuleForm";
 
 export default async function BrandPage({
@@ -15,6 +15,7 @@ export default async function BrandPage({
   if (!brand) notFound();
   const launches = launchesByBrand(brand.id);
   const watches = await getWatches();
+  const profile = await getProfile();
   const ids = new Set(watches.map((w) => w.launchId));
 
   return (
@@ -40,7 +41,12 @@ export default async function BrandPage({
       </section>
       <div className="grid gap-4 md:grid-cols-2">
         {launches.map((l) => (
-          <LaunchCard key={l.id} launch={l} watching={ids.has(l.id)} />
+          <LaunchCard
+            key={l.id}
+            launch={l}
+            watching={ids.has(l.id)}
+            hasSession={Boolean(profile.email)}
+          />
         ))}
       </div>
     </AppShell>

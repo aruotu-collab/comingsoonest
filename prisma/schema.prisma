@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String      @id @default(cuid())
+  email     String      @unique
+  name      String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  watches   Watch[]
+  rules     WatchRule[]
+  sessions  Session[]
+  alerts    AlertLog[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Watch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  launchId  String
+  intensity String   @default("i_want_this")
+  prefs     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  alerts    AlertLog[]
+
+  @@unique([userId, launchId])
+  @@index([launchId])
+}
+
+model WatchRule {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  brandId   String?
+  bucket    String?
+  query     String?
+  createdAt DateTime @default(now())
+}
+
+model ChangeEvent {
+  id        String   @id @default(cuid())
+  at        DateTime
+  type      String
+  launchId  String?
+  brandId   String?
+  message   String
+  bucket    String?
+  createdAt DateTime @default(now())
+  alerts    AlertLog[]
+
+  @@index([at])
+  @@index([launchId])
+}
+
+model AlertLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchId   String
+  watch     Watch       @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     ChangeEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sentAt    DateTime    @default(now())
+  channel   String      @default("email")
+  status    String      @default("sent")
+
+  @@unique([userId, eventId])
+  @@index([sentAt])
+}

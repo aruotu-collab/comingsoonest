@@ -1,38 +1,15 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import type { AlertIntensity, Watch, WatchPrefs, WatchRule } from "@/lib/types";
+import { prisma } from "@/lib/db";
+import { createSessionForEmail, getSessionUser } from "@/lib/session";
+import type { AlertIntensity, WatchPrefs, WatchRule } from "@/lib/types";
 import { DEFAULT_WATCH_PREFS } from "@/lib/types";
 
-const WATCH_COOKIE = "cs_watches";
-const RULES_COOKIE = "cs_watch_rules";
-
-function parseJson<T>(raw: string | undefined, fallback: T): T {
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-async function writeWatches(watches: Watch[]) {
-  const jar = await cookies();
-  jar.set(WATCH_COOKIE, JSON.stringify(watches), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-  });
-}
-
-async function writeRules(rules: WatchRule[]) {
-  const jar = await cookies();
-  jar.set(RULES_COOKIE, JSON.stringify(rules), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-  });
+export async function ensureEmailSession(email: string, name?: string) {
+  const user = await createSessionForEmail(email, name);
+  revalidatePath("/", "layout");
+  return { ok: true as const, email: user.email };
 }
 
 export async function watchLaunch(
@@ -40,46 +17,72 @@ export async function watchLaunch(
   prefs: Partial<WatchPrefs> = {},
   intensity: AlertIntensity = "i_want_this"
 ) {
-  const jar = await cookies();
-  const watches = parseJson<Watch[]>(jar.get(WATCH_COOKIE)?.value, []);
-  if (!watches.some((w) => w.launchId === launchId)) {
-    watches.push({
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false as const, needsEmail: true as const };
+  }
+
+  await prisma.watch.upsert({
+    where: { userId_launchId: { userId: user.id, launchId } },
+    create: {
+      userId: user.id,
       launchId,
       intensity,
       prefs: { ...DEFAULT_WATCH_PREFS, ...prefs },
-      createdAt: new Date().toISOString(),
-    });
-    await writeWatches(watches);
-  }
+    },
+    update: {
+      intensity,
+      prefs: { ...DEFAULT_WATCH_PREFS, ...prefs },
+    },
+  });
+
   revalidatePath("/", "layout");
+  return { ok: true as const, needsEmail: false as const };
 }
 
 export async function unwatchLaunch(launchId: string) {
-  const jar = await cookies();
-  const watches = parseJson<Watch[]>(jar.get(WATCH_COOKIE)?.value, []);
-  await writeWatches(watches.filter((w) => w.launchId !== launchId));
+  const user = await getSessionUser();
+  if (!user) return { ok: false as const };
+
+  await prisma.watch.deleteMany({ where: { userId: user.id, launchId } });
   revalidatePath("/", "layout");
+  return { ok: true as const };
 }
 
 export async function updateWatchIntensity(launchId: string, intensity: AlertIntensity) {
-  const jar = await cookies();
-  const watches = parseJson<Watch[]>(jar.get(WATCH_COOKIE)?.value, []);
-  const next = watches.map((w) => (w.launchId === launchId ? { ...w, intensity } : w));
-  await writeWatches(next);
+  const user = await getSessionUser();
+  if (!user) return { ok: false as const };
+
+  await prisma.watch.updateMany({
+    where: { userId: user.id, launchId },
+    data: { intensity },
+  });
   revalidatePath("/", "layout");
+  return { ok: true as const };
 }
 
 export async function addWatchRule(rule: Omit<WatchRule, "id">) {
-  const jar = await cookies();
-  const rules = parseJson<WatchRule[]>(jar.get(RULES_COOKIE)?.value, []);
-  rules.push({ ...rule, id: `r-${Date.now()}` });
-  await writeRules(rules);
+  const user = await getSessionUser();
+  if (!user) return { ok: false as const, needsEmail: true as const };
+
+  await prisma.watchRule.create({
+    data: {
+      userId: user.id,
+      label: rule.label,
+      brandId: rule.brandId,
+      bucket: rule.bucket,
+      query: rule.query,
+    },
+  });
   revalidatePath("/", "layout");
+  return { ok: true as const };
 }
 
 export async function removeWatchRule(id: string) {
-  const jar = await cookies();
-  const rules = parseJson<WatchRule[]>(jar.get(RULES_COOKIE)?.value, []);
-  await writeRules(rules.filter((r) => r.id !== id));
+  const user = await getSessionUser();
+  if (!user) return { ok: false as const };
+
+  await prisma.watchRule.deleteMany({ where: { id, userId: user.id } });
   revalidatePath("/", "layout");
+  return { ok: true as const };
 }

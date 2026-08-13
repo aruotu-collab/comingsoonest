@@ -77,7 +77,7 @@ export default async function WatchingPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {launches.map(({ launch, watch }) => (
             <div key={launch.id}>
-              <LaunchCard launch={launch} watching />
+              <LaunchCard launch={launch} watching hasSession />
               <p className="mt-2 px-1 text-xs text-[var(--muted)]">
                 Intensity: {watch.intensity.replaceAll("_", " ")}
               </p>

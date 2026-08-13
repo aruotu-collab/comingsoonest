@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { LaunchCard } from "@/components/LaunchCard";
 import { searchLaunches } from "@/lib/repo";
-import { getWatches } from "@/lib/watches";
+import { getProfile, getWatches } from "@/lib/watches";
 
 const examples = [
   "new men's fragrances",
@@ -20,6 +20,7 @@ export default async function SearchPage({
   const { q = "" } = await searchParams;
   const results = searchLaunches(q);
   const watches = await getWatches();
+  const profile = await getProfile();
   const ids = new Set(watches.map((w) => w.launchId));
 
   return (
@@ -67,7 +68,12 @@ export default async function SearchPage({
 
       <div className="grid gap-4 md:grid-cols-2">
         {results.map((l) => (
-          <LaunchCard key={l.id} launch={l} watching={ids.has(l.id)} />
+          <LaunchCard
+            key={l.id}
+            launch={l}
+            watching={ids.has(l.id)}
+            hasSession={Boolean(profile.email)}
+          />
         ))}
       </div>
     </AppShell>

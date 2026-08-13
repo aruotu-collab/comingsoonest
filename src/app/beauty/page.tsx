@@ -2,10 +2,11 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { LaunchCard } from "@/components/LaunchCard";
 import { fragranceHeat, getLaunches } from "@/lib/repo";
-import { getWatches } from "@/lib/watches";
+import { getProfile, getWatches } from "@/lib/watches";
 
 export default async function BeautyPage() {
   const watches = await getWatches();
+  const profile = await getProfile();
   const ids = new Set(watches.map((w) => w.launchId));
   const fragrances = getLaunches({ bucket: "beauty" });
   const heat = fragranceHeat();
@@ -48,7 +49,12 @@ export default async function BeautyPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {fragrances.map((l) => (
-          <LaunchCard key={l.id} launch={l} watching={ids.has(l.id)} />
+          <LaunchCard
+            key={l.id}
+            launch={l}
+            watching={ids.has(l.id)}
+            hasSession={Boolean(profile.email)}
+          />
         ))}
       </div>
     </AppShell>

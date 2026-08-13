@@ -9,10 +9,12 @@ export function LaunchCard({
   launch,
   watching,
   badge,
+  hasSession,
 }: {
   launch: Launch;
   watching: boolean;
   badge?: string;
+  hasSession?: boolean;
 }) {
   return (
     <article className="panel rise flex h-full flex-col gap-3 rounded-2xl p-4">
@@ -30,7 +32,12 @@ export function LaunchCard({
             <p className="text-[var(--muted)]">{launch.name}</p>
           </Link>
         </div>
-        <WatchButton launchId={launch.id} watching={watching} compact />
+        <WatchButton
+          launchId={launch.id}
+          watching={watching}
+          hasSession={hasSession}
+          compact
+        />
       </div>
 
       <ScorePills

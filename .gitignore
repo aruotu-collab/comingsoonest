@@ -48,8 +48,5 @@ next-env.d.ts
 .windsurf/
 skills-lock.json
 
-# unused local prisma scaffold (app uses seeded TS data for now)
-/prisma/
-prisma.config.ts
 
 .vercel

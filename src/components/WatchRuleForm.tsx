@@ -24,12 +24,12 @@ export function WatchRuleForm({
           disabled={pending}
           className="rounded-full border border-[var(--line)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
           onClick={() =>
-            start(() =>
-              addWatchRule({
+            start(async () => {
+              await addWatchRule({
                 label: `All new from ${brandName}`,
                 brandId,
-              })
-            )
+              });
+            })
           }
         >
           Watch {brandName}
@@ -39,12 +39,12 @@ export function WatchRuleForm({
           disabled={pending}
           className="rounded-full border border-[var(--line)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
           onClick={() =>
-            start(() =>
-              addWatchRule({
+            start(async () => {
+              await addWatchRule({
                 label: `New ${bucket} launches`,
                 bucket,
-              })
-            )
+              });
+            })
           }
         >
           Watch {bucket}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { totalWatchers } from "@/lib/repo";
-import { getWatches } from "@/lib/watches";
+import { getProfile, getWatches } from "@/lib/watches";
 
 const nav = [
   { href: "/", label: "Discover" },
@@ -19,6 +19,7 @@ export async function AppShell({
   active?: string;
 }) {
   const watches = await getWatches();
+  const profile = await getProfile();
   const watchers = totalWatchers();
 
   return (
@@ -43,6 +44,11 @@ export async function AppShell({
             <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[var(--accent)]">
               {watches.length} watching
             </span>
+            {profile.email && (
+              <span className="max-w-[160px] truncate" title={profile.email}>
+                {profile.email}
+              </span>
+            )}
           </div>
 
           <Link

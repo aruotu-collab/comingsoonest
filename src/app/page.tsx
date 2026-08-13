@@ -20,6 +20,7 @@ export default async function DiscoverPage() {
   const watches = await getWatches();
   const watchingIds = new Set(watches.map((w) => w.launchId));
   const profile = await getProfile();
+  const hasSession = Boolean(profile.email);
   const metrics = pulseMetrics();
   const anticipated = mostAnticipated(3);
   const detected = justDetected(3);
@@ -111,6 +112,7 @@ export default async function DiscoverPage() {
               key={l.id}
               launch={l}
               watching={watchingIds.has(l.id)}
+              hasSession={hasSession}
               badge="Most anticipated"
             />
           ))}
@@ -124,6 +126,7 @@ export default async function DiscoverPage() {
               key={l.id}
               launch={l}
               watching={watchingIds.has(l.id)}
+              hasSession={hasSession}
               badge="Just detected"
             />
           ))}
@@ -137,6 +140,7 @@ export default async function DiscoverPage() {
               key={l.id}
               launch={l}
               watching={watchingIds.has(l.id)}
+              hasSession={hasSession}
               badge="Drop imminent"
             />
           ))}
