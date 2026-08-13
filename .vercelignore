@@ -1,0 +1,10 @@
+.env
+.env.*
+.agents
+.claude
+.windsurf
+skills-lock.json
+prisma
+prisma.config.ts
+README.md
+**/*.md

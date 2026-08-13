@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# local agent / skill tooling (not for deploy)
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+
+# unused local prisma scaffold (app uses seeded TS data for now)
+/prisma/
+prisma.config.ts
+
+.vercel
