@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
+import { HorizontalScroll } from "@/components/HorizontalScroll";
 
 export function CategoryNav() {
   const pathname = usePathname();
 
   return (
     <div className="border-t border-[var(--line)]">
-      <nav
-        aria-label="Categories"
-        className="mx-auto flex max-w-7xl gap-1.5 overflow-x-auto px-4 py-2.5 md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
+      <HorizontalScroll ariaLabel="Categories">
         <Link
           href="/"
           className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs transition md:text-sm ${
@@ -42,7 +40,7 @@ export function CategoryNav() {
             </Link>
           );
         })}
-      </nav>
+      </HorizontalScroll>
     </div>
   );
 }
