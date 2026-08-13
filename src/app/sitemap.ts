@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { CATEGORIES } from "@/lib/categories";
 import { getBrands, getLaunches } from "@/lib/repo";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://comingsoonest.com";
@@ -25,6 +26,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: path === "" ? 1 : 0.7,
   }));
 
+  const categories: MetadataRoute.Sitemap = CATEGORIES.map((c) => ({
+    url: `${siteUrl}/category/${c.slug}`,
+    lastModified: now,
+    changeFrequency: "daily" as const,
+    priority: 0.75,
+  }));
+
   const launches = getLaunches().map((l) => ({
     url: `${siteUrl}/launch/${l.slug}`,
     lastModified: now,
@@ -39,5 +47,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...launches, ...brands];
+  return [...staticRoutes, ...categories, ...launches, ...brands];
 }

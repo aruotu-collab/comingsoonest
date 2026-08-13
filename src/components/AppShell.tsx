@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryNav } from "@/components/CategoryNav";
 import { totalWatchers } from "@/lib/repo";
 import { getProfile, getWatches } from "@/lib/watches";
 
@@ -9,6 +10,7 @@ const nav = [
   { href: "/radar", label: "Radar" },
   { href: "/live", label: "Live" },
   { href: "/my-future", label: "My Future" },
+  { href: "/rankings", label: "Rankings" },
 ];
 
 export async function AppShell({
@@ -59,7 +61,10 @@ export async function AppShell({
           </Link>
         </div>
 
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-3 md:px-6">
+        <nav
+          aria-label="Main"
+          className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {nav.map((item) => {
             const isActive = active === item.href;
             return (
@@ -76,19 +81,9 @@ export async function AppShell({
               </Link>
             );
           })}
-          <Link
-            href="/beauty"
-            className="whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-[var(--muted)] hover:text-[var(--text)]"
-          >
-            Fragrance Radar
-          </Link>
-          <Link
-            href="/rankings"
-            className="whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-[var(--muted)] hover:text-[var(--text)]"
-          >
-            Rankings
-          </Link>
         </nav>
+
+        <CategoryNav />
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">{children}</main>
