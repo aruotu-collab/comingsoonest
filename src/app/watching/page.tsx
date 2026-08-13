@@ -1,11 +1,33 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { LaunchCard } from "@/components/LaunchCard";
-import { getLaunchById, getBrandById } from "@/lib/repo";
-import { getWatchRules, getWatches } from "@/lib/watches";
 import { RemoveRuleButton } from "@/components/RemoveRuleButton";
+import { SignInForm } from "@/components/SignInForm";
+import { getLaunchById, getBrandById } from "@/lib/repo";
+import { getProfile, getWatchRules, getWatches } from "@/lib/watches";
 
 export default async function WatchingPage() {
+  const profile = await getProfile();
+  const signedIn = Boolean(profile.email);
+
+  if (!signedIn) {
+    return (
+      <AppShell active="/watching">
+        <section className="mb-6">
+          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            Watching · Never miss what’s next
+          </p>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl">
+            Your future-interest graph
+          </h1>
+        </section>
+        <section className="panel rounded-2xl p-8">
+          <SignInForm />
+        </section>
+      </AppShell>
+    );
+  }
+
   const watches = await getWatches();
   const rules = await getWatchRules();
   const launches = watches
@@ -24,7 +46,8 @@ export default async function WatchingPage() {
           Your future-interest graph
         </h1>
         <p className="mt-2 text-[var(--muted)]">
-          Not bookmarks. An agent monitoring the market for you.
+          Signed in as {profile.email}. Not bookmarks — an agent monitoring the
+          market for you.
         </p>
       </section>
 

@@ -9,6 +9,7 @@ import { DEFAULT_WATCH_PREFS } from "@/lib/types";
 export async function ensureEmailSession(email: string, name?: string) {
   const user = await createSessionForEmail(email, name);
   revalidatePath("/", "layout");
+  revalidatePath("/watching");
   return { ok: true as const, email: user.email };
 }
 
