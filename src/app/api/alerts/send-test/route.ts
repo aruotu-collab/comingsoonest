@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { sendAlertEmail } from "@/lib/email";
 import { prisma } from "@/lib/db";
 import { processAlertQueue } from "@/lib/alerts";
+import { getLaunches } from "@/lib/repo";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Secure one-shot test:
  * Authorization: Bearer $CRON_SECRET
- * Body: { "email": "you@example.com", "launchId"?: "l-dior-nuit" }
+ * Body: { "email": "you@example.com", "launchId"?: "<catalogue launch id>" }
  */
 export async function POST(request: Request) {
   const auth = request.headers.get("authorization");
@@ -26,7 +27,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "email required" }, { status: 400 });
   }
 
-  const launchId = body.launchId || "l-dior-nuit";
+  const fallback = getLaunches()[0]?.id;
+  const launchId = body.launchId || fallback;
+  if (!launchId) {
+    return NextResponse.json({ error: "no launches in catalogue" }, { status: 500 });
+  }
 
   const user = await prisma.user.upsert({
     where: { email },

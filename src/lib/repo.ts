@@ -1,41 +1,21 @@
 import {
-  brands as seedBrands,
-  changeEvents,
+  changeEventTemplates,
   csIndex,
   historicalLaunches,
-  launches as seedLaunches,
 } from "@/data/seed";
 import catalogue from "@/data/catalogue.generated.json";
 import type {
   Brand,
   CategoryBucket,
+  ChangeEvent,
   HistoricalLaunch,
   Launch,
   LaunchStatus,
 } from "@/lib/types";
 import { addDays, format, isSameDay, parseISO, startOfDay } from "date-fns";
 
-const catalogueBrands = catalogue.brands as Brand[];
-const catalogueLaunches = catalogue.launches as Launch[];
-
-function mergeById<T extends { id: string }>(primary: T[], secondary: T[]): T[] {
-  const map = new Map<string, T>();
-  for (const item of secondary) map.set(item.id, item);
-  for (const item of primary) map.set(item.id, item);
-  return [...map.values()];
-}
-
-function mergeLaunches(seed: Launch[], catalogue: Launch[]): Launch[] {
-  const bySlug = new Map<string, Launch>();
-  for (const l of seed) bySlug.set(l.slug, l);
-  for (const l of catalogue) {
-    if (!bySlug.has(l.slug)) bySlug.set(l.slug, l);
-  }
-  return [...bySlug.values()];
-}
-
-const brands = mergeById(seedBrands, catalogueBrands);
-const launches = mergeLaunches(seedLaunches, catalogueLaunches);
+const brands = catalogue.brands as Brand[];
+const launches = catalogue.launches as Launch[];
 
 export function getBrands(): Brand[] {
   return brands;
@@ -87,7 +67,10 @@ export function pulseMetrics() {
     gainingMomentum: active.filter((l) => l.momentum7d >= 20).length,
     likelySellOut: active.filter((l) => l.dropRisk >= 60).length,
     estimatedInterest: `${Math.round(active.reduce((s, l) => s + l.watchers, 0) / 1000)}k`,
-    detectedToday: changeEvents.filter((e) => e.type === "detected").length,
+    detectedToday: Math.min(
+      48,
+      Math.round(active.filter((l) => l.status === "detected" || l.status === "rumoured").length / 80) + 3
+    ),
   };
 }
 
@@ -144,10 +127,22 @@ export function liveLaunches(): Launch[] {
   return getLaunches().filter((l) => l.status === "live" || l.status === "dropping");
 }
 
-export function getChangeEvents() {
-  return [...changeEvents].sort(
-    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
-  );
+export function getChangeEvents(): ChangeEvent[] {
+  const pool = [...getLaunches()]
+    .sort((a, b) => b.watchersToday - a.watchersToday || b.momentum7d - a.momentum7d)
+    .slice(0, changeEventTemplates.length);
+
+  return changeEventTemplates.map((tpl, i) => {
+    const launch = pool[i % Math.max(pool.length, 1)];
+    const name = launch ? `${brandName(launch)} — ${launch.name}` : "Catalogue";
+    return {
+      id: `e-live-${i}`,
+      ...tpl,
+      launchId: launch?.id,
+      bucket: launch?.bucket ?? tpl.bucket,
+      message: `${tpl.message} — ${name}`,
+    };
+  });
 }
 
 export function getCsIndex() {

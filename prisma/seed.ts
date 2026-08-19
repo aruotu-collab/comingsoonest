@@ -4,7 +4,7 @@ config();
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { changeEvents } from "../src/data/seed";
+import { getChangeEvents } from "../src/lib/repo";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -13,7 +13,8 @@ async function main() {
   await prisma.alertLog.deleteMany();
   await prisma.changeEvent.deleteMany();
 
-  for (const event of changeEvents) {
+  const events = getChangeEvents();
+  for (const event of events) {
     await prisma.changeEvent.create({
       data: {
         id: event.id,
@@ -27,7 +28,7 @@ async function main() {
     });
   }
 
-  console.log(`Seeded ${changeEvents.length} change events`);
+  console.log(`Seeded ${events.length} change events from live catalogue`);
 }
 
 main()
