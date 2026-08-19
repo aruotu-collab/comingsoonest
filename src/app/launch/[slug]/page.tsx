@@ -8,7 +8,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { WatchButton } from "@/components/WatchButton";
 import { LaunchVideo } from "@/components/LaunchVideo";
 import { formatReleaseDate } from "@/lib/countdown";
-import { videoUrlForSlug } from "@/data/launch-videos";
+import { resolveLaunchVideo } from "@/lib/launch-video";
 import { brandName, getBrandById, getLaunch, scoreBand } from "@/lib/repo";
 import { STATUS_LABEL } from "@/lib/types";
 import { getProfile, getWatches } from "@/lib/watches";
@@ -35,7 +35,7 @@ export default async function LaunchPage({
   const shareUrl = `${siteUrl.replace(/\/$/, "")}/launch/${launch.slug}`;
   const shareTitle = `${brandName(launch)} — ${launch.name}`;
   const shareText = `Watching this on Coming Soonest: ${shareTitle} (${launch.expectedLabel})`;
-  const videoUrl = launch.videoUrl || videoUrlForSlug(launch.slug);
+  const videoUrl = await resolveLaunchVideo(launch);
 
   return (
     <AppShell>

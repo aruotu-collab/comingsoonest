@@ -83,3 +83,13 @@ model AlertLog {
   @@unique([userId, eventId])
   @@index([sentAt])
 }
+
+/** Cached YouTube matches for launch pages (auto-search + manual). */
+model LaunchVideoCache {
+  launchId   String   @id
+  slug       String   @unique
+  youtubeUrl String?
+  query      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

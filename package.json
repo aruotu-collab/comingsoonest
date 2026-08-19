@@ -13,6 +13,7 @@
     "catalogue:collect": "node scripts/collect-catalogue.mjs",
     "catalogue:import": "node scripts/import-catalogue.mjs",
     "catalogue:refresh": "node scripts/collect-catalogue.mjs && node scripts/import-catalogue.mjs",
+    "videos:enrich": "node --env-file=.env.local scripts/enrich-videos.mjs",
     "postinstall": "prisma generate"
   },
   "prisma": {
