@@ -6,7 +6,9 @@ import { Countdown } from "@/components/Countdown";
 import { ScorePills } from "@/components/ScorePills";
 import { ShareButton } from "@/components/ShareButton";
 import { WatchButton } from "@/components/WatchButton";
+import { LaunchVideo } from "@/components/LaunchVideo";
 import { formatReleaseDate } from "@/lib/countdown";
+import { videoUrlForSlug } from "@/data/launch-videos";
 import { brandName, getBrandById, getLaunch, scoreBand } from "@/lib/repo";
 import { STATUS_LABEL } from "@/lib/types";
 import { getProfile, getWatches } from "@/lib/watches";
@@ -33,6 +35,7 @@ export default async function LaunchPage({
   const shareUrl = `${siteUrl.replace(/\/$/, "")}/launch/${launch.slug}`;
   const shareTitle = `${brandName(launch)} — ${launch.name}`;
   const shareText = `Watching this on Coming Soonest: ${shareTitle} (${launch.expectedLabel})`;
+  const videoUrl = launch.videoUrl || videoUrlForSlug(launch.slug);
 
   return (
     <AppShell>
@@ -135,6 +138,10 @@ export default async function LaunchPage({
           ))}
         </div>
       </section>
+
+      {videoUrl && (
+        <LaunchVideo url={videoUrl} title={`${shareTitle} video`} />
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="panel rounded-2xl p-5 lg:col-span-2">

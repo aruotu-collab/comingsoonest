@@ -272,6 +272,7 @@ for (const row of rows.slice(1)) {
       : [],
     tags: [category, subcategory, sku].filter(Boolean).map((t) => t.toLowerCase()),
     preorderUrl: sourceUrl || undefined,
+    videoUrl: col(row, "Video URL") || col(row, "YouTube URL") || undefined,
   });
 }
 

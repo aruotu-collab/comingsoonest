@@ -109,6 +109,8 @@ export interface Launch {
   sampleAvailable?: boolean;
   preorderUrl?: string;
   buyUrl?: string;
+  /** YouTube watch / youtu.be / embed URL — shown on launch page when set. */
+  videoUrl?: string;
   sponsored?: boolean;
   underTheRadar?: boolean;
   nearMiles?: number;
