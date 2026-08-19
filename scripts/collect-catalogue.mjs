@@ -35,10 +35,22 @@ const HEADERS = [
 ];
 
 const TARGET = {
-  steam: 2800,
-  books2026: 1800,
-  booksExtra: 600,
+  steam: 2500,
+  /** Upcoming books only (release date still in the future). */
+  booksUpcoming: 3200,
 };
+
+const TODAY = startOfUtcDay(new Date());
+
+function startOfUtcDay(d) {
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function isFutureIsoDay(isoDay) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDay)) return false;
+  const t = Date.parse(`${isoDay}T12:00:00.000Z`);
+  return Number.isFinite(t) && t >= TODAY;
+}
 
 const UA = {
   "User-Agent":
@@ -168,33 +180,158 @@ function parseSteamDate(raw) {
   return { window: v, status: "Announced" };
 }
 
-function parseBookDate(dates) {
+function parseBookDate(dates, firstPublishYear) {
   const list = Array.isArray(dates) ? dates : [];
-  for (const d of list) {
-    const iso = String(d).match(/^(\d{4}-\d{2}-\d{2})/);
-    if (iso) return { window: iso[1], status: "Confirmed" };
-  }
-  for (const d of list) {
-    const m = String(d).match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/);
+  const months = {
+    january: "01", february: "02", march: "03", april: "04", may: "05", june: "06",
+    july: "07", august: "08", september: "09", october: "10", november: "11", december: "12",
+    jan: "01", feb: "02", mar: "03", apr: "04", jun: "06", jul: "07", aug: "08",
+    sep: "09", sept: "09", oct: "10", nov: "11", dec: "12",
+  };
+  const candidates = [];
+
+  for (const raw of list) {
+    const s = String(raw).trim();
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (m) {
-      const months = {
-        january: "01", february: "02", march: "03", april: "04", may: "05", june: "06",
-        july: "07", august: "08", september: "09", october: "10", november: "11", december: "12",
-      };
-      const mo = months[m[1].toLowerCase()];
-      if (mo) {
-        return {
-          window: `${m[3]}-${mo}-${m[2].padStart(2, "0")}`,
-          status: "Confirmed",
-        };
-      }
+      candidates.push({ day: `${m[1]}-${m[2]}-${m[3]}`, status: "Confirmed" });
+      continue;
+    }
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) {
+      candidates.push({
+        day: `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`,
+        status: "Confirmed",
+      });
+      continue;
+    }
+    m = s.match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/);
+    if (m && months[m[1].toLowerCase()]) {
+      candidates.push({
+        day: `${m[3]}-${months[m[1].toLowerCase()]}-${m[2].padStart(2, "0")}`,
+        status: "Confirmed",
+      });
+      continue;
+    }
+    m = s.match(/^([A-Za-z]+)\s+(\d{4})$/);
+    if (m && months[m[1].toLowerCase()]) {
+      candidates.push({
+        day: `${m[2]}-${months[m[1].toLowerCase()]}-15`,
+        status: "Expected",
+      });
+      continue;
+    }
+    m = s.match(/^(\d{4})$/);
+    if (m) {
+      // Year-only: treat as late in that year so mid-year scrapes stay "coming"
+      candidates.push({ day: `${m[1]}-12-15`, status: "Expected", yearOnly: true });
     }
   }
-  for (const d of list) {
-    const y = String(d).match(/\b(20\d{2})\b/);
-    if (y) return { window: y[1], status: "Expected" };
+
+  if (!candidates.length && firstPublishYear && /^\d{4}$/.test(String(firstPublishYear))) {
+    candidates.push({
+      day: `${firstPublishYear}-12-15`,
+      status: "Expected",
+      yearOnly: true,
+    });
   }
-  return { window: "", status: "Announced" };
+
+  const future = candidates
+    .filter((c) => isFutureIsoDay(c.day))
+    .sort((a, b) => a.day.localeCompare(b.day));
+
+  if (!future.length) return null;
+  const best = future[0];
+  return {
+    window: best.yearOnly ? best.day.slice(0, 4) : best.day,
+    status: best.status,
+    day: best.day,
+  };
+}
+
+async function collectUpcomingBooks(limit) {
+  console.log(`Open Library: collecting up to ${limit} upcoming books (future dates only)…`);
+  const out = [];
+  const seen = new Set();
+  const queries = [
+    { q: "first_publish_year:2026 AND language:eng", label: "2026-en", maxPages: 90 },
+    { q: "first_publish_year:2027", label: "2027", maxPages: 20 },
+    { q: "first_publish_year:2028", label: "2028", maxPages: 10 },
+    { q: "first_publish_year:2026", label: "2026-all", maxPages: 40 },
+  ];
+  const pageSize = 100;
+
+  for (const { q, label, maxPages } of queries) {
+    if (out.length >= limit) break;
+    for (let page = 1; out.length < limit && page <= maxPages; page++) {
+      const url =
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}` +
+        `&limit=${pageSize}&page=${page}` +
+        `&fields=key,title,author_name,publish_date,isbn,publisher,first_publish_year,language`;
+      let data;
+      try {
+        data = await fetchJson(url);
+      } catch (e) {
+        console.warn(`  OL ${label} page ${page} failed:`, e.message);
+        await sleep(2000);
+        continue;
+      }
+      const docs = data.docs || [];
+      if (!docs.length) break;
+      let added = 0;
+      let skippedPast = 0;
+      for (const doc of docs) {
+        const title = (doc.title || "").replace(/\s+/g, " ").trim();
+        if (!title || title.length < 2) continue;
+        const isbn = Array.isArray(doc.isbn)
+          ? doc.isbn.find((x) => /^\d{10,13}$/.test(String(x).replace(/-/g, "")))
+          : "";
+        const key = doc.key || isbn || title;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const parsed = parseBookDate(doc.publish_date, doc.first_publish_year);
+        if (!parsed) {
+          skippedPast++;
+          continue;
+        }
+
+        const author =
+          (Array.isArray(doc.author_name) && doc.author_name[0]) ||
+          (Array.isArray(doc.publisher) && doc.publisher[0]) ||
+          "Unknown";
+        const workKey = (doc.key || "").replace("/works/", "");
+        out.push({
+          Category: "Books",
+          Subcategory: "New release",
+          "Product / Release": title,
+          "Brand / Creator": author,
+          "Release Date / Window": parsed.window,
+          Status: parsed.status,
+          Price: "",
+          "SKU / Identifier": isbn
+            ? `isbn-${isbn}`
+            : workKey
+              ? `ol-${workKey}`
+              : "",
+          "Region / Platform": "Global",
+          "Source URL": doc.key
+            ? `https://openlibrary.org${doc.key}`
+            : "https://openlibrary.org",
+          "Source Type": "Library catalogue",
+          "Verification Notes": `Open Library upcoming (${label}); release ${parsed.day}`,
+        });
+        added++;
+        if (out.length >= limit) break;
+      }
+      console.log(
+        `  OL ${label} page=${page} +${added} skipPast=${skippedPast} (total ${out.length} / found ${data.numFound})`
+      );
+      if (docs.length < pageSize) break;
+      await sleep(300);
+    }
+  }
+  return out;
 }
 
 async function collectSteam(limit) {
@@ -254,79 +391,26 @@ async function collectSteam(limit) {
   return out;
 }
 
-async function collectOpenLibrary(query, limit, label) {
-  console.log(`Open Library: collecting up to ${limit} (${label})…`);
-  const out = [];
-  const seen = new Set();
-  const pageSize = 100;
-  for (let page = 1; out.length < limit && page <= 50; page++) {
-    const url =
-      `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}` +
-      `&limit=${pageSize}&page=${page}` +
-      `&fields=key,title,author_name,publish_date,isbn,publisher,first_publish_year`;
-    let data;
-    try {
-      data = await fetchJson(url);
-    } catch (e) {
-      console.warn(`  OL ${label} page ${page} failed:`, e.message);
-      await sleep(2000);
-      continue;
-    }
-    const docs = data.docs || [];
-    if (!docs.length) break;
-    let added = 0;
-    for (const doc of docs) {
-      const title = (doc.title || "").replace(/\s+/g, " ").trim();
-      if (!title || title.length < 2) continue;
-      const isbn = Array.isArray(doc.isbn)
-        ? doc.isbn.find((x) => /^\d{10,13}$/.test(String(x).replace(/-/g, "")))
-        : "";
-      const key = doc.key || isbn || title;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const year = doc.first_publish_year || "";
-      const author =
-        (Array.isArray(doc.author_name) && doc.author_name[0]) ||
-        (Array.isArray(doc.publisher) && doc.publisher[0]) ||
-        "Unknown";
-      const { window, status } = parseBookDate(doc.publish_date);
-      const workKey = (doc.key || "").replace("/works/", "");
-      out.push({
-        Category: "Books",
-        Subcategory: "New release",
-        "Product / Release": title,
-        "Brand / Creator": author,
-        "Release Date / Window": window || String(year || ""),
-        Status: status,
-        Price: "",
-        "SKU / Identifier": isbn
-          ? `isbn-${isbn}`
-          : workKey
-            ? `ol-${workKey}`
-            : "",
-        "Region / Platform": "Global",
-        "Source URL": doc.key
-          ? `https://openlibrary.org${doc.key}`
-          : "https://openlibrary.org",
-        "Source Type": "Library catalogue",
-        "Verification Notes": `Open Library query=${label}`,
-      });
-      added++;
-      if (out.length >= limit) break;
-    }
-    console.log(
-      `  OL ${label} page=${page} +${added} (total ${out.length} / found ${data.numFound})`
-    );
-    if (docs.length < pageSize) break;
-    await sleep(350);
+function isBookRowFuture(row) {
+  if ((row.Category || "").toLowerCase() !== "books") return true;
+  const raw = (row["Release Date / Window"] || "").trim();
+  if (!raw) return false;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return isFutureIsoDay(raw);
+  if (/^\d{4}$/.test(raw)) {
+    const y = Number(raw);
+    const nowY = new Date().getUTCFullYear();
+    if (y > nowY) return true;
+    if (y === nowY) return isFutureIsoDay(`${y}-12-15`);
+    return false;
   }
-  return out;
+  return true;
 }
 
 function mergeRows(lists) {
   const map = new Map();
   for (const list of lists) {
     for (const row of list) {
+      if (!isBookRowFuture(row)) continue;
       const key = normKey(
         row["Product / Release"],
         row["Brand / Creator"],
@@ -345,19 +429,9 @@ async function main() {
   console.log(`Seed: ${seed.length} rows`);
 
   const steam = await collectSteam(TARGET.steam);
-  const books2026 = await collectOpenLibrary(
-    "first_publish_year:2026",
-    TARGET.books2026,
-    "year-2026"
-  );
-  const booksExtra = await collectOpenLibrary(
-    "first_publish_year:2027 OR first_publish_year:2025",
-    TARGET.booksExtra,
-    "year-2025-2027"
-  );
+  const books = await collectUpcomingBooks(TARGET.booksUpcoming);
 
-  const merged = mergeRows([seed, steam, books2026, booksExtra]);
-  // Prefer future / dated items first in file for readability
+  const merged = mergeRows([seed, steam, books]);
   merged.sort((a, b) => {
     const da = a["Release Date / Window"] || "9999";
     const db = b["Release Date / Window"] || "9999";
@@ -375,7 +449,7 @@ async function main() {
   console.log(`\nWrote ${merged.length} products → ${path.relative(root, outPath)}`);
   console.log("By category:", byCat);
   console.log(
-    `Breakdown: seed=${seed.length} steam=${steam.length} books2026=${books2026.length} booksExtra=${booksExtra.length}`
+    `Breakdown: seed=${seed.length} steam=${steam.length} booksUpcoming=${books.length}`
   );
 }
 

@@ -127,9 +127,15 @@ function parseRelease(raw) {
       days > 0 ? `Coming in ${days} days` : days === 0 ? "Drop imminent" : "Released / past window";
     return { expectedAt: d.toISOString(), expectedLabel: label };
   }
-  // Year only
+  // Year only — use late-year window so current-year titles stay upcoming
   if (/^\d{4}$/.test(v)) {
-    return { expectedAt: `${v}-06-15T12:00:00.000Z`, expectedLabel: v };
+    const year = Number(v);
+    const nowY = new Date().getUTCFullYear();
+    const monthDay = year > nowY ? "06-15" : "12-15";
+    return {
+      expectedAt: `${v}-${monthDay}T12:00:00.000Z`,
+      expectedLabel: year > nowY ? v : `Late ${v}`,
+    };
   }
   // Qx 2026 etc
   const q = v.match(/Q([1-4])\s*(\d{4})/i);
@@ -179,6 +185,18 @@ for (const row of rows.slice(1)) {
   const brandName = col(row, "Brand / Creator") || "Unknown";
   if (!product) continue;
 
+  const releaseRaw = col(row, "Release Date / Window");
+  const { expectedAt, expectedLabel } = parseRelease(releaseRaw);
+
+  // Drop already-released books so the Books category stays "coming up"
+  if (
+    category.toLowerCase().includes("book") &&
+    expectedAt &&
+    new Date(expectedAt).getTime() < Date.now()
+  ) {
+    continue;
+  }
+
   const brandSlug = slugify(brandName);
   const brandId = `b-${brandSlug}`;
   if (!brandMap.has(brandId)) {
@@ -202,8 +220,6 @@ for (const row of rows.slice(1)) {
   const sourceUrl = col(row, "Source URL");
   const sourceType = col(row, "Source Type");
   const notes = col(row, "Verification Notes");
-  const releaseRaw = col(row, "Release Date / Window");
-  const { expectedAt, expectedLabel } = parseRelease(releaseRaw);
   const status = mapStatus(statusRaw);
   const bucket = mapBucket(category);
   const confidence = confidenceFor(statusRaw);
