@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { createSessionForEmail, getSessionUser } from "@/lib/session";
+import { clearSession, createSessionForEmail, getSessionUser } from "@/lib/session";
 import type { AlertIntensity, WatchPrefs, WatchRule } from "@/lib/types";
 import { DEFAULT_WATCH_PREFS } from "@/lib/types";
 
@@ -10,7 +10,16 @@ export async function ensureEmailSession(email: string, name?: string) {
   const user = await createSessionForEmail(email, name);
   revalidatePath("/", "layout");
   revalidatePath("/watching");
+  revalidatePath("/signin");
   return { ok: true as const, email: user.email };
+}
+
+export async function signOut() {
+  await clearSession();
+  revalidatePath("/", "layout");
+  revalidatePath("/watching");
+  revalidatePath("/signin");
+  return { ok: true as const };
 }
 
 export async function watchLaunch(

@@ -2,20 +2,55 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { AppShell } from "@/components/AppShell";
 import { Countdown } from "@/components/Countdown";
+import {
+  CATEGORIES,
+  categoryLabelForLaunch,
+  launchMatchesCategorySlug,
+} from "@/lib/categories";
 import { calendarDays, brandName, yearHeatmap } from "@/lib/repo";
 import { getWatches } from "@/lib/watches";
 import { STATUS_LABEL } from "@/lib/types";
 
+const VIEW_FILTERS = [
+  ["all", "All"],
+  ["watching", "Watching"],
+  ["foryou", "For you"],
+] as const;
+
+/** Popular verticals for calendar filtering (keep short). */
+const CALENDAR_CATEGORIES = [
+  "trainers",
+  "gaming",
+  "books",
+  "lego",
+  "perfume",
+  "tech",
+  "beauty",
+  "phones",
+  "headphones",
+] as const;
+
+function calendarHref(opts: { filter: string; category?: string }) {
+  const params = new URLSearchParams();
+  if (opts.filter && opts.filter !== "all") params.set("filter", opts.filter);
+  if (opts.category) params.set("category", opts.category);
+  const q = params.toString();
+  return q ? `/calendar?${q}` : "/calendar";
+}
+
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; category?: string }>;
 }) {
-  const { filter = "all" } = await searchParams;
+  const { filter = "all", category } = await searchParams;
   const watches = await getWatches();
   const watchIds = new Set(watches.map((w) => w.launchId));
   const days = calendarDays(18);
   const heat = yearHeatmap();
+  const activeCategory = category && CATEGORIES.some((c) => c.slug === category)
+    ? category
+    : undefined;
 
   return (
     <AppShell active="/calendar">
@@ -30,15 +65,12 @@ export default async function CalendarPage({
           Coming Up on each date — plus On This Day history. The world’s launch
           calendar.
         </p>
+
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
-          {[
-            ["all", "All"],
-            ["watching", "Watching"],
-            ["foryou", "For you"],
-          ].map(([id, label]) => (
+          {VIEW_FILTERS.map(([id, label]) => (
             <Link
               key={id}
-              href={`/calendar?filter=${id}`}
+              href={calendarHref({ filter: id, category: activeCategory })}
               className={`rounded-full px-3 py-1.5 ${
                 filter === id
                   ? "bg-[var(--accent-soft)] text-[var(--accent)]"
@@ -48,9 +80,48 @@ export default async function CalendarPage({
               {label}
             </Link>
           ))}
-          <Link href="/calendar/history" className="rounded-full bg-white/5 px-3 py-1.5 text-[var(--muted)]">
+          <Link
+            href="/calendar/history"
+            className="rounded-full bg-white/5 px-3 py-1.5 text-[var(--muted)]"
+          >
             History / Time Travel
           </Link>
+        </div>
+
+        <div className="mt-3">
+          <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-[var(--muted)]">
+            Filter by category
+          </p>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <Link
+              href={calendarHref({ filter })}
+              className={`rounded-full px-3 py-1.5 ${
+                !activeCategory
+                  ? "bg-[var(--hot)]/20 text-[var(--hot)]"
+                  : "bg-white/5 text-[var(--muted)]"
+              }`}
+            >
+              All categories
+            </Link>
+            {CALENDAR_CATEGORIES.map((slug) => {
+              const cat = CATEGORIES.find((c) => c.slug === slug);
+              if (!cat) return null;
+              const on = activeCategory === slug;
+              return (
+                <Link
+                  key={slug}
+                  href={calendarHref({ filter, category: slug })}
+                  className={`rounded-full px-3 py-1.5 ${
+                    on
+                      ? "bg-[var(--hot)]/20 text-[var(--hot)]"
+                      : "bg-white/5 text-[var(--muted)]"
+                  }`}
+                >
+                  {cat.label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -82,6 +153,9 @@ export default async function CalendarPage({
                 ["beauty", "tech", "wear", "play"].includes(l.bucket)
             );
           }
+          if (activeCategory) {
+            list = list.filter((l) => launchMatchesCategorySlug(l, activeCategory));
+          }
 
           const empty = list.length === 0;
 
@@ -94,7 +168,9 @@ export default async function CalendarPage({
                   </h2>
                   <p className="text-sm text-[var(--muted)]">
                     {empty
-                      ? "Nothing major confirmed — tracking undated launches that week"
+                      ? activeCategory
+                        ? `No ${CATEGORIES.find((c) => c.slug === activeCategory)?.label ?? "matching"} launches this day`
+                        : "Nothing major confirmed — tracking undated launches that week"
                       : `${list.length} launches · ${
                           list.length >= 3 ? "Very active day" : "Quiet day"
                         }`}
@@ -132,9 +208,14 @@ export default async function CalendarPage({
                               <div className="font-medium">
                                 {brandName(l)} — {l.name}
                               </div>
-                              <div className="text-xs text-[var(--muted)]">
-                                {STATUS_LABEL[l.status]} · Launch {l.launchScore} ·{" "}
-                                {l.watchers.toLocaleString()} watching
+                              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+                                <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[var(--accent)]">
+                                  {categoryLabelForLaunch(l)}
+                                </span>
+                                <span>
+                                  {STATUS_LABEL[l.status]} · Launch {l.launchScore} ·{" "}
+                                  {l.watchers.toLocaleString()} watching
+                                </span>
                               </div>
                               <div className="mt-1">
                                 <Countdown

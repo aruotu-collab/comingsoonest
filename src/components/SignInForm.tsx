@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ensureEmailSession } from "@/lib/actions";
 
@@ -14,6 +14,7 @@ export function SignInForm({
   submitLabel?: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -27,7 +28,17 @@ export function SignInForm({
           try {
             setError(null);
             await ensureEmailSession(email);
-            router.refresh();
+            const next = searchParams.get("next");
+            if (next && next.startsWith("/")) {
+              router.push(next);
+            } else if (
+              typeof window !== "undefined" &&
+              window.location.pathname === "/signin"
+            ) {
+              router.push("/watching");
+            } else {
+              router.refresh();
+            }
           } catch (err) {
             setError(err instanceof Error ? err.message : "Could not sign in");
           }

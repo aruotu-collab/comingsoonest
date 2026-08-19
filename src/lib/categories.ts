@@ -64,6 +64,28 @@ function matchesCategory(launch: Launch, cat: CategoryDef): boolean {
   return false;
 }
 
+export function launchMatchesCategorySlug(launch: Launch, slug: string): boolean {
+  const cat = getCategory(slug);
+  if (!cat) return false;
+  if (cat.bucket && !cat.subcategory && !cat.tagsAny) {
+    return launch.bucket === cat.bucket;
+  }
+  return matchesCategory(launch, cat);
+}
+
+/** Human label for calendar / lists — prefer browse chip, then subcategory, then bucket. */
+export function categoryLabelForLaunch(launch: Launch): string {
+  for (const cat of CATEGORIES) {
+    if (cat.bucket && !cat.subcategory && !cat.tagsAny) {
+      if (launch.bucket === cat.bucket) return cat.label;
+      continue;
+    }
+    if (matchesCategory(launch, cat)) return cat.label;
+  }
+  if (launch.subcategory) return launch.subcategory;
+  return BUCKET_LABEL[launch.bucket] || "Launch";
+}
+
 export function launchesForCategory(slug: string): Launch[] {
   const cat = getCategory(slug);
   if (!cat) return [];

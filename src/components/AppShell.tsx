@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthControls } from "@/components/AuthControls";
 import { CategoryNav } from "@/components/CategoryNav";
 import { totalWatchers } from "@/lib/repo";
 import { getProfile, getWatches } from "@/lib/watches";
@@ -37,7 +38,7 @@ export async function AppShell({
             </div>
           </Link>
 
-          <div className="hidden items-center gap-3 text-xs text-[var(--muted)] md:flex">
+          <div className="hidden items-center gap-3 text-xs text-[var(--muted)] lg:flex">
             <span className="inline-flex items-center gap-2">
               <span className="live-dot" />
               LIVE
@@ -46,19 +47,17 @@ export async function AppShell({
             <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[var(--accent)]">
               {watches.length} watching
             </span>
-            {profile.email && (
-              <span className="max-w-[160px] truncate" title={profile.email}>
-                {profile.email}
-              </span>
-            )}
           </div>
 
-          <Link
-            href="/search"
-            className="rounded-full border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--text)]"
-          >
-            What’s coming?
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/search"
+              className="hidden rounded-full border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--text)] sm:inline-flex"
+            >
+              What’s coming?
+            </Link>
+            <AuthControls email={profile.email} />
+          </div>
         </div>
 
         <nav

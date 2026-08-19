@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { LaunchCard } from "@/components/LaunchCard";
 import { RemoveRuleButton } from "@/components/RemoveRuleButton";
@@ -22,7 +23,9 @@ export default async function WatchingPage() {
           </h1>
         </section>
         <section className="panel rounded-2xl p-8">
-          <SignInForm />
+          <Suspense fallback={<p className="text-sm text-[var(--muted)]">Loading…</p>}>
+            <SignInForm />
+          </Suspense>
         </section>
       </AppShell>
     );
