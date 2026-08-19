@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { LaunchCard } from "@/components/LaunchCard";
+import { Pagination } from "@/components/Pagination";
+import { pageHref, paginate, parsePage } from "@/lib/pagination";
 import { searchLaunches } from "@/lib/repo";
 import { getProfile, getWatches } from "@/lib/watches";
 
@@ -15,10 +17,11 @@ const examples = [
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const { q = "" } = await searchParams;
-  const results = searchLaunches(q);
+  const { q = "", page: pageRaw } = await searchParams;
+  const all = searchLaunches(q);
+  const pager = paginate(all, parsePage(pageRaw));
   const watches = await getWatches();
   const profile = await getProfile();
   const ids = new Set(watches.map((w) => w.launchId));
@@ -62,12 +65,18 @@ export default async function SearchPage({
 
       {q && (
         <p className="mb-4 text-sm text-[var(--muted)]">
-          {results.length} signals for “{q}”
+          {pager.total} signals for “{q}”
+          {pager.total > 0 && (
+            <>
+              {" "}
+              · showing {pager.from}–{pager.to}
+            </>
+          )}
         </p>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {results.map((l) => (
+        {pager.items.map((l) => (
           <LaunchCard
             key={l.id}
             launch={l}
@@ -76,6 +85,14 @@ export default async function SearchPage({
           />
         ))}
       </div>
+
+      {q && pager.total > 0 && (
+        <Pagination
+          page={pager.page}
+          totalPages={pager.totalPages}
+          hrefForPage={(p) => pageHref("/search", { q }, p)}
+        />
+      )}
     </AppShell>
   );
 }

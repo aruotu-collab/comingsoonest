@@ -1,14 +1,24 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { LaunchCard } from "@/components/LaunchCard";
+import { Pagination } from "@/components/Pagination";
+import { pageHref, paginate, parsePage } from "@/lib/pagination";
 import { fragranceHeat, getLaunches } from "@/lib/repo";
 import { getProfile, getWatches } from "@/lib/watches";
 
-export default async function BeautyPage() {
+export default async function BeautyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageRaw } = await searchParams;
   const watches = await getWatches();
   const profile = await getProfile();
   const ids = new Set(watches.map((w) => w.launchId));
-  const fragrances = getLaunches({ bucket: "beauty" });
+  const all = [...getLaunches({ bucket: "beauty" })].sort(
+    (a, b) => b.launchScore - a.launchScore
+  );
+  const pager = paginate(all, parsePage(pageRaw));
   const heat = fragranceHeat();
 
   return (
@@ -21,8 +31,13 @@ export default async function BeautyPage() {
           Fragrance Radar
         </h1>
         <p className="mt-2 text-[var(--muted)]">
-          {fragrances.length} upcoming · dates confirmed · launching within 7 days —
-          demo vertical from the strategy thread.
+          {pager.total} upcoming
+          {pager.total > 0 && (
+            <>
+              {" "}
+              · showing {pager.from}–{pager.to}
+            </>
+          )}
         </p>
       </section>
 
@@ -48,7 +63,7 @@ export default async function BeautyPage() {
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {fragrances.map((l) => (
+        {pager.items.map((l) => (
           <LaunchCard
             key={l.id}
             launch={l}
@@ -57,6 +72,12 @@ export default async function BeautyPage() {
           />
         ))}
       </div>
+
+      <Pagination
+        page={pager.page}
+        totalPages={pager.totalPages}
+        hrefForPage={(p) => pageHref("/beauty", {}, p)}
+      />
     </AppShell>
   );
 }
