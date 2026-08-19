@@ -5,7 +5,7 @@ Launch intelligence network — **Watch what’s next.**
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind
-- Launch catalogue seeded in `src/data/seed.ts`
+- Launch catalogue: demo seed in `src/data/seed.ts` + imported batch in `src/data/catalogue.generated.ts` (from `data/comingsoonest_seed_599.csv`)
 - **Postgres** (Prisma) for users, sessions, watches, rules, change events, alert log
 - **Resend** for launch alert emails
 - Vercel Cron → `/api/cron/alerts` (daily on Hobby)
@@ -20,6 +20,11 @@ npm run db:seed
 npm run dev
 ```
 
+Re-import the ChatGPT catalogue CSV after updating `data/comingsoonest_seed_599.csv`:
+
+```bash
+npm run catalogue:import
+```
 Open [http://localhost:3000](http://localhost:3000).
 
 ## Core loop

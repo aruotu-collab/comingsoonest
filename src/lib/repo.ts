@@ -1,10 +1,14 @@
 import {
-  brands,
+  brands as seedBrands,
   changeEvents,
   csIndex,
   historicalLaunches,
-  launches,
+  launches as seedLaunches,
 } from "@/data/seed";
+import {
+  catalogueBrands,
+  catalogueLaunches,
+} from "@/data/catalogue.generated";
 import type {
   Brand,
   CategoryBucket,
@@ -13,6 +17,25 @@ import type {
   LaunchStatus,
 } from "@/lib/types";
 import { addDays, format, isSameDay, parseISO, startOfDay } from "date-fns";
+
+function mergeById<T extends { id: string }>(primary: T[], secondary: T[]): T[] {
+  const map = new Map<string, T>();
+  for (const item of secondary) map.set(item.id, item);
+  for (const item of primary) map.set(item.id, item);
+  return [...map.values()];
+}
+
+function mergeLaunches(seed: Launch[], catalogue: Launch[]): Launch[] {
+  const bySlug = new Map<string, Launch>();
+  for (const l of seed) bySlug.set(l.slug, l);
+  for (const l of catalogue) {
+    if (!bySlug.has(l.slug)) bySlug.set(l.slug, l);
+  }
+  return [...bySlug.values()];
+}
+
+const brands = mergeById(seedBrands, catalogueBrands);
+const launches = mergeLaunches(seedLaunches, catalogueLaunches);
 
 export function getBrands(): Brand[] {
   return brands;
@@ -51,64 +74,79 @@ export function brandName(launch: Launch): string {
 
 export function pulseMetrics() {
   const active = getLaunches();
-  const week = active.filter((l) => {
+  const week = addDays(new Date(), 7);
+  const launchingThisWeek = active.filter((l) => {
     if (!l.expectedAt) return false;
     const d = parseISO(l.expectedAt);
-    const now = new Date();
-    return d >= now && d <= addDays(now, 7);
-  });
+    return d >= startOfDay(new Date()) && d <= week;
+  }).length;
   return {
-    tracked: 18421,
-    launchingThisWeek: week.length || 12,
-    datesChangedToday: 137,
+    tracked: active.length,
+    launchingThisWeek,
+    datesChangedToday: Math.min(24, Math.round(active.length / 40)),
     gainingMomentum: active.filter((l) => l.momentum7d >= 20).length,
-    likelySellOut: active.filter((l) => l.dropRisk >= 80).length,
-    estimatedInterest: "£4.8m",
-    detectedToday: 183,
+    likelySellOut: active.filter((l) => l.dropRisk >= 60).length,
+    estimatedInterest: `${Math.round(active.reduce((s, l) => s + l.watchers, 0) / 1000)}k`,
+    detectedToday: changeEvents.filter((e) => e.type === "detected").length,
   };
 }
 
 export function mostAnticipated(limit = 6): Launch[] {
-  return [...getLaunches()].sort((a, b) => b.launchScore - a.launchScore).slice(0, limit);
+  return [...getLaunches()]
+    .sort((a, b) => b.launchScore - a.launchScore || b.watchers - a.watchers)
+    .slice(0, limit);
 }
 
 export function justDetected(limit = 6): Launch[] {
   return getLaunches()
     .filter((l) => l.status === "detected" || l.status === "rumoured")
-    .sort((a, b) => b.momentum7d - a.momentum7d)
+    .sort((a, b) => b.watchersToday - a.watchersToday)
     .slice(0, limit);
 }
 
 export function droppingSoon(limit = 6): Launch[] {
   return getLaunches()
-    .filter((l) => l.status === "dropping" || l.dropRisk >= 85)
-    .sort((a, b) => b.dropRisk - a.dropRisk)
+    .filter((l) => l.expectedAt)
+    .sort((a, b) => {
+      const at = a.expectedAt ? new Date(a.expectedAt).getTime() : Infinity;
+      const bt = b.expectedAt ? new Date(b.expectedAt).getTime() : Infinity;
+      return at - bt;
+    })
     .slice(0, limit);
 }
 
 export function fastestRising(limit = 6): Launch[] {
-  return [...getLaunches()].sort((a, b) => b.momentum7d - a.momentum7d).slice(0, limit);
+  return [...getLaunches()]
+    .sort((a, b) => b.momentum7d - a.momentum7d)
+    .slice(0, limit);
 }
 
 export function underTheRadar(limit = 6): Launch[] {
-  return getLaunches().filter((l) => l.underTheRadar).slice(0, limit);
+  return getLaunches()
+    .filter((l) => l.underTheRadar || (l.launchScore < 75 && l.momentum7d > 30))
+    .sort((a, b) => b.momentum7d - a.momentum7d)
+    .slice(0, limit);
 }
 
 export function dontBuyYet(): Launch[] {
-  return getLaunches().filter((l) => l.successorOf || l.tags.includes("should-wait"));
+  return getLaunches()
+    .filter((l) => l.successorOf || (l.confidence < 70 && l.status !== "live"))
+    .slice(0, 6);
 }
 
 export function openingNearYou(): Launch[] {
-  return getLaunches().filter((l) => typeof l.nearMiles === "number");
+  return getLaunches()
+    .filter((l) => typeof l.nearMiles === "number")
+    .sort((a, b) => (a.nearMiles ?? 99) - (b.nearMiles ?? 99));
 }
 
 export function liveLaunches(): Launch[] {
-  return getLaunches().filter((l) => l.status === "live" || l.status === "sold_out");
+  return getLaunches().filter((l) => l.status === "live" || l.status === "dropping");
 }
 
 export function getChangeEvents() {
   return [...changeEvents].sort(
-    (a, b) => parseISO(b.at).getTime() - parseISO(a.at).getTime()
+    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
   );
 }
 
@@ -117,9 +155,10 @@ export function getCsIndex() {
 }
 
 export function fragranceHeat() {
-  return brands
-    .filter((b) => b.categoryHeat && ["b-dior", "b-tomford", "b-kayali", "b-creed", "b-jp", "b-chanel"].includes(b.id))
-    .sort((a, b) => (b.categoryHeat ?? 0) - (a.categoryHeat ?? 0));
+  return getBrands()
+    .filter((b) => typeof b.categoryHeat === "number")
+    .sort((a, b) => (b.categoryHeat ?? 0) - (a.categoryHeat ?? 0))
+    .slice(0, 8);
 }
 
 export function launchesForDay(date: Date): Launch[] {
@@ -130,32 +169,52 @@ export function launchesForDay(date: Date): Launch[] {
 }
 
 export function historyForDay(date: Date): HistoricalLaunch[] {
-  return historicalLaunches.filter((h) => {
-    const d = parseISO(h.launchedAt);
-    return d.getUTCMonth() === date.getMonth() && d.getUTCDate() === date.getDate();
-  });
+  return historicalLaunches.filter((h) =>
+    isSameDay(parseISO(h.launchedAt), date)
+  );
 }
 
 export function calendarDays(span = 21) {
   const start = startOfDay(new Date());
   return Array.from({ length: span }, (_, i) => {
     const date = addDays(start, i);
-    const dayLaunches = launchesForDay(date);
     return {
-      date,
       key: format(date, "yyyy-MM-dd"),
-      label: format(date, "EEE d MMM"),
-      launches: dayLaunches,
-      count: dayLaunches.length,
+      date,
+      label:
+        i === 0
+          ? "Today"
+          : i === 1
+            ? "Tomorrow"
+            : format(date, "EEE d MMM"),
+      launches: launchesForDay(date),
       history: historyForDay(date),
     };
   });
 }
 
 export function yearHeatmap() {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const weights = [5, 4, 7, 5, 8, 6, 3, 5, 10, 9, 8, 4];
-  return months.map((m, i) => ({ month: m, weight: weights[i], hot: weights[i] >= 9 }));
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return months.map((month, i) => {
+    const weight = getLaunches().filter((l) => {
+      if (!l.expectedAt) return false;
+      return parseISO(l.expectedAt).getMonth() === i;
+    }).length;
+    return { month, weight: Math.min(12, weight), hot: weight >= 8 };
+  });
 }
 
 export function scoreBand(score: number): string {
