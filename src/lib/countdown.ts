@@ -81,3 +81,16 @@ export function getCountdown(
 export function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
+
+/** Calendar date for UI, e.g. "26 Sept 2026". */
+export function formatReleaseDate(targetAt?: string | null): string | null {
+  if (!targetAt) return null;
+  const d = new Date(targetAt);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
+

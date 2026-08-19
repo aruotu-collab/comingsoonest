@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Launch } from "@/lib/types";
 import { STATUS_LABEL } from "@/lib/types";
 import { brandName, scoreBand } from "@/lib/repo";
+import { formatReleaseDate } from "@/lib/countdown";
 import { Countdown } from "@/components/Countdown";
 import { ScorePills } from "@/components/ScorePills";
 import { WatchButton } from "@/components/WatchButton";
@@ -19,6 +20,8 @@ export function LaunchCard({
   hasSession?: boolean;
   emphasizeCountdown?: boolean;
 }) {
+  const releaseDate = formatReleaseDate(launch.expectedAt);
+
   return (
     <article className="panel rise flex flex-col gap-3 rounded-2xl p-4">
       <div className="flex items-start justify-between gap-3">
@@ -43,13 +46,27 @@ export function LaunchCard({
         />
       </div>
 
-      <Countdown
-        targetAt={launch.expectedAt}
-        status={launch.status}
-        fallbackLabel={launch.expectedLabel}
-        size={emphasizeCountdown ? "md" : "sm"}
-        className={emphasizeCountdown ? "w-full rounded-xl bg-black/20 px-3 py-2" : undefined}
-      />
+      <div
+        className={
+          emphasizeCountdown ? "w-full rounded-xl bg-black/20 px-3 py-2" : undefined
+        }
+      >
+        <Countdown
+          targetAt={launch.expectedAt}
+          status={launch.status}
+          fallbackLabel={launch.expectedLabel}
+          size={emphasizeCountdown ? "md" : "sm"}
+        />
+        {releaseDate && (
+          <p
+            className={`mt-1.5 font-medium tracking-wide text-[var(--text)] ${
+              emphasizeCountdown ? "text-sm" : "text-xs"
+            }`}
+          >
+            {releaseDate}
+          </p>
+        )}
+      </div>
 
       <ScorePills
         launch={launch.launchScore}
@@ -62,7 +79,7 @@ export function LaunchCard({
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)]">
         <span>{STATUS_LABEL[launch.status]}</span>
-        <span>{launch.expectedLabel}</span>
+        <span>{releaseDate || launch.expectedLabel}</span>
         <span>{launch.watchers.toLocaleString()} watching</span>
         <span>↑ {launch.momentum7d}% 7d</span>
         <span>{scoreBand(launch.launchScore)}</span>

@@ -6,6 +6,7 @@ import { Countdown } from "@/components/Countdown";
 import { ScorePills } from "@/components/ScorePills";
 import { ShareButton } from "@/components/ShareButton";
 import { WatchButton } from "@/components/WatchButton";
+import { formatReleaseDate } from "@/lib/countdown";
 import { brandName, getBrandById, getLaunch, scoreBand } from "@/lib/repo";
 import { STATUS_LABEL } from "@/lib/types";
 import { getProfile, getWatches } from "@/lib/watches";
@@ -22,6 +23,7 @@ export default async function LaunchPage({
   if (!launch) notFound();
 
   const brand = getBrandById(launch.brandId);
+  const releaseDate = formatReleaseDate(launch.expectedAt);
   const watches = await getWatches();
   const profile = await getProfile();
   const watch = watches.find((w) => w.launchId === launch.id);
@@ -96,7 +98,12 @@ export default async function LaunchPage({
             fallbackLabel={launch.expectedLabel}
             size="lg"
           />
-          <p className="mt-2 text-sm text-[var(--muted)]">{launch.expectedLabel}</p>
+          <p className="mt-2 text-base font-medium text-[var(--text)]">
+            {releaseDate || launch.expectedLabel}
+          </p>
+          {releaseDate && launch.expectedLabel && launch.expectedLabel !== releaseDate && (
+            <p className="mt-1 text-sm text-[var(--muted)]">{launch.expectedLabel}</p>
+          )}
         </div>
 
         <div className="mt-6">
@@ -110,7 +117,7 @@ export default async function LaunchPage({
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Expected", launch.expectedLabel],
+            ["Expected", releaseDate || launch.expectedLabel],
             ["Price", launch.expectedPrice ?? "—"],
             ["Watching", launch.watchers.toLocaleString()],
             ["7d momentum", `↑ ${launch.momentum7d}%`],
