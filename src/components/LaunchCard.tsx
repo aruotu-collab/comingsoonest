@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Launch } from "@/lib/types";
 import { STATUS_LABEL } from "@/lib/types";
+import { categoryLabelForLaunch } from "@/lib/categories";
 import { brandName, scoreBand } from "@/lib/repo";
 import { formatReleaseDate } from "@/lib/countdown";
 import { Countdown } from "@/components/Countdown";
@@ -21,6 +22,7 @@ export function LaunchCard({
   emphasizeCountdown?: boolean;
 }) {
   const releaseDate = formatReleaseDate(launch.expectedAt);
+  const category = categoryLabelForLaunch(launch);
 
   return (
     <article className="panel rise flex flex-col gap-3 rounded-2xl p-4">
@@ -31,6 +33,11 @@ export function LaunchCard({
               {badge}
             </div>
           )}
+          <div className="mb-1.5">
+            <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[11px] uppercase tracking-[0.14em] text-[var(--accent)]">
+              {category}
+            </span>
+          </div>
           <Link href={`/launch/${launch.slug}`} className="block">
             <h3 className="font-[family-name:var(--font-display)] text-xl tracking-wide">
               {brandName(launch)}
