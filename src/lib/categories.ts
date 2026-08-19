@@ -21,6 +21,7 @@ export const CATEGORIES: CategoryDef[] = [
   { slug: "lego", label: "LEGO", subcategory: "LEGO" },
   { slug: "streaming", label: "Streaming", subcategory: "Streaming" },
   { slug: "restaurants", label: "Restaurants", subcategory: "Restaurant" },
+  { slug: "books", label: "Books", subcategory: "Books" },
   { slug: "ai", label: "AI", subcategory: "AI" },
   { slug: "beauty", label: BUCKET_LABEL.beauty, bucket: "beauty" },
   { slug: "tech", label: BUCKET_LABEL.tech, bucket: "tech" },

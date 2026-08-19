@@ -15,6 +15,8 @@ export const brands: Brand[] = [
   { id: "b-netflix", slug: "netflix", name: "Netflix", followers: 510000, categoryHeat: 74 },
   { id: "b-dishoom", slug: "dishoom", name: "Dishoom", followers: 42000, categoryHeat: 71 },
   { id: "b-jp", slug: "jean-paul-gaultier", name: "Jean Paul Gaultier", followers: 61000, categoryHeat: 82 },
+  { id: "b-penguin", slug: "penguin", name: "Penguin", followers: 98000, categoryHeat: 76 },
+  { id: "b-bloomsbury", slug: "bloomsbury", name: "Bloomsbury", followers: 54000, categoryHeat: 72 },
 ];
 
 const daysFromNow = (n: number) => {
@@ -552,6 +554,82 @@ export const launches: Launch[] = [
     tags: ["ai", "saas"],
     underTheRadar: true,
   },
+  {
+    id: "l-penguin-atlas",
+    slug: "the-midnight-atlas",
+    name: "The Midnight Atlas",
+    brandId: "b-penguin",
+    bucket: "use",
+    subcategory: "Books",
+    status: "dated",
+    summary: "Highly anticipated literary thriller — UK hardback publication date locked.",
+    expectedPrice: "£16.99",
+    launchScore: 81,
+    hype: 79,
+    confidence: 92,
+    dropRisk: 12,
+    watchers: 6400,
+    momentum7d: 34,
+    watchersToday: 210,
+    expectedAt: daysFromNow(16),
+    expectedLabel: "Publishes in 16 days",
+    regions: [
+      { region: "United Kingdom", dateLabel: "Hardback pub day", confidence: 94 },
+      { region: "United States", dateLabel: "US edition ~3 weeks later", confidence: 78 },
+    ],
+    retailers: [
+      { name: "Waterstones", status: "Preorder open" },
+      { name: "Amazon", status: "Preorder open" },
+    ],
+    sources: [
+      { type: "official", label: "Penguin catalogue", confirmed: true, at: daysAgo(20) },
+      { type: "retailer", label: "Waterstones listing", confirmed: true, at: daysAgo(12) },
+    ],
+    timeline: [
+      { at: daysAgo(40), label: "Title announced" },
+      { at: daysAgo(20), label: "Pub date confirmed" },
+      { at: daysAgo(12), label: "UK preorders live" },
+    ],
+    tags: ["books", "thriller", "hardback"],
+    preorderUrl: "https://www.waterstones.com",
+  },
+  {
+    id: "l-bloomsbury-ember",
+    slug: "embers-of-the-north",
+    name: "Embers of the North",
+    brandId: "b-bloomsbury",
+    bucket: "use",
+    subcategory: "Books",
+    status: "announced",
+    summary: "Fantasy sequel with early retailer signals — sample chapters circulating.",
+    expectedPrice: "£14.99",
+    launchScore: 74,
+    hype: 82,
+    confidence: 76,
+    dropRisk: 18,
+    watchers: 9100,
+    momentum7d: 56,
+    watchersToday: 340,
+    expectedAt: daysFromNow(28),
+    expectedLabel: "~28 days to pub",
+    regions: [
+      { region: "United Kingdom", dateLabel: "Trade paperback", confidence: 80 },
+      { region: "United States", dateLabel: "Same-week release", confidence: 72 },
+    ],
+    retailers: [
+      { name: "Bookshop.org", status: "Coming soon" },
+      { name: "Waterstones", status: "Listed" },
+    ],
+    sources: [
+      { type: "press", label: "The Bookseller brief", confirmed: true, at: daysAgo(8) },
+      { type: "community", label: "ARC chatter", confirmed: false, at: hoursAgo(14) },
+    ],
+    timeline: [
+      { at: daysAgo(60), label: "Sequel confirmed" },
+      { at: daysAgo(8), label: "Pub window announced" },
+    ],
+    tags: ["books", "fantasy", "sequel"],
+  },
 ];
 
 export const changeEvents: ChangeEvent[] = [
@@ -565,6 +643,7 @@ export const changeEvents: ChangeEvent[] = [
   { id: "e8", at: hoursAgo(2), type: "went_live", launchId: "l-jpg-le-beau", message: "It's live — Jean Paul Gaultier", bucket: "beauty" },
   { id: "e9", at: hoursAgo(2.5), type: "sample_available", launchId: "l-creed-sample", message: "Sample signal detected — Creed", bucket: "beauty" },
   { id: "e10", at: hoursAgo(3), type: "sold_out", message: "Micro drop sold out — Collectibles", bucket: "play" },
+  { id: "e11", at: hoursAgo(0.8), type: "preorder_live", launchId: "l-penguin-atlas", message: "Book preorders open — The Midnight Atlas", bucket: "use" },
 ];
 
 export const historicalLaunches: HistoricalLaunch[] = [
