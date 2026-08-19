@@ -5,10 +5,7 @@ import {
   historicalLaunches,
   launches as seedLaunches,
 } from "@/data/seed";
-import {
-  catalogueBrands,
-  catalogueLaunches,
-} from "@/data/catalogue.generated";
+import catalogue from "@/data/catalogue.generated.json";
 import type {
   Brand,
   CategoryBucket,
@@ -17,6 +14,9 @@ import type {
   LaunchStatus,
 } from "@/lib/types";
 import { addDays, format, isSameDay, parseISO, startOfDay } from "date-fns";
+
+const catalogueBrands = catalogue.brands as Brand[];
+const catalogueLaunches = catalogue.launches as Launch[];
 
 function mergeById<T extends { id: string }>(primary: T[], secondary: T[]): T[] {
   const map = new Map<string, T>();

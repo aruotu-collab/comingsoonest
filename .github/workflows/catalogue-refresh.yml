@@ -29,7 +29,7 @@ jobs:
         run: |
           git config user.name "comingsoonest-bot"
           git config user.email "bot@comingsoonest.com"
-          git add data/catalogue.csv src/data/catalogue.generated.ts
+          git add data/catalogue.csv src/data/catalogue.generated.json
           if git diff --staged --quiet; then
             echo "No catalogue changes"
           else
