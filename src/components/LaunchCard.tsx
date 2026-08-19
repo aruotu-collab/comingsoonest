@@ -20,7 +20,7 @@ export function LaunchCard({
   emphasizeCountdown?: boolean;
 }) {
   return (
-    <article className="panel rise flex h-full flex-col gap-3 rounded-2xl p-4">
+    <article className="panel rise flex flex-col gap-3 rounded-2xl p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           {badge && (
@@ -60,7 +60,7 @@ export function LaunchCard({
 
       <p className="line-clamp-2 text-sm text-[var(--muted)]">{launch.summary}</p>
 
-      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)]">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)]">
         <span>{STATUS_LABEL[launch.status]}</span>
         <span>{launch.expectedLabel}</span>
         <span>{launch.watchers.toLocaleString()} watching</span>

@@ -103,7 +103,7 @@ export default async function DiscoverPage() {
         </div>
       </section>
 
-      <div className="mb-8 grid gap-4 lg:grid-cols-3">
+      <div className="mb-8 grid items-start gap-4 lg:grid-cols-3">
         <div className="space-y-3">
           <h2 className="text-xs uppercase tracking-[0.18em] text-[var(--hot)]">
             Most anticipated
