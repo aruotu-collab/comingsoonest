@@ -1,0 +1,38 @@
+name: Daily catalogue refresh
+
+on:
+  schedule:
+    # 06:00 UTC every day
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Collect + import catalogue
+        run: npm run catalogue:refresh
+
+      - name: Commit if changed
+        run: |
+          git config user.name "comingsoonest-bot"
+          git config user.email "bot@comingsoonest.com"
+          git add data/catalogue.csv src/data/catalogue.generated.ts
+          if git diff --staged --quiet; then
+            echo "No catalogue changes"
+          else
+            git commit -m "chore: daily catalogue refresh ($(date -u +%Y-%m-%d))"
+            git push
+          fi

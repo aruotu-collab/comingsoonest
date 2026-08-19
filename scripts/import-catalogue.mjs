@@ -9,8 +9,16 @@ import { createHash } from "node:crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const csvPath = path.join(root, "data", "comingsoonest_seed_599.csv");
+const csvPath = [
+  path.join(root, "data", "catalogue.csv"),
+  path.join(root, "data", "comingsoonest_seed_599.csv"),
+].find((p) => fs.existsSync(p));
+if (!csvPath) {
+  console.error("No catalogue CSV found in data/");
+  process.exit(1);
+}
 const outPath = path.join(root, "src", "data", "catalogue.generated.ts");
+console.log(`Importing ${path.relative(root, csvPath)}…`);
 
 function parseCsv(text) {
   const rows = [];
