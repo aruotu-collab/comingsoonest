@@ -5,22 +5,59 @@ import { videoUrlForSlug } from "@/data/launch-videos";
 import { extractYoutubeId } from "@/lib/youtube";
 
 const HIT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const MISS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MISS_TTL_MS = 12 * 60 * 60 * 1000; // retry misses sooner (was 7 days)
 
-export function buildYoutubeQuery(launch: Launch): string {
-  const brand = getBrandById(launch.brandId)?.name ?? "Unknown";
-  const base = `${brand} ${launch.name}`.replace(/\s+/g, " ").trim();
-  // Bias toward product look / official-style coverage without being too narrow
+function cleanText(s: string): string {
+  return s
+    .replace(/\//g, " ")
+    .replace(/[“”"]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Build several search queries — first is preferred. */
+export function buildYoutubeQueries(launch: Launch): string[] {
+  const brand = cleanText(getBrandById(launch.brandId)?.name ?? "");
+  const name = cleanText(launch.name);
+  const queries: string[] = [];
+
+  // Prefer product name alone when brand is already inside the title
+  if (name) queries.push(name);
+
+  const combo = cleanText(`${brand} ${name}`);
+  if (combo && combo !== name) queries.push(combo);
+
   if (launch.bucket === "wear" || launch.tags.some((t) => /sneaker|trainer/i.test(t))) {
-    return `${base} sneakers review`.slice(0, 100);
+    queries.push(`${name} sneakers`);
+    queries.push(`${combo} review`);
+  } else if (
+    launch.tags.some((t) => /book/i.test(t)) ||
+    launch.subcategory.toLowerCase().includes("book")
+  ) {
+    queries.push(`${name} book`);
+  } else if (launch.bucket === "play" || launch.tags.some((t) => /gaming|steam/i.test(t))) {
+    queries.push(`${name} trailer`);
+    queries.push(`${name} gameplay`);
+  } else {
+    queries.push(`${combo} official`);
   }
-  if (launch.tags.some((t) => /book/i.test(t)) || launch.subcategory.toLowerCase().includes("book")) {
-    return `${base} book`.slice(0, 100);
+
+  // Dedupe + length cap
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const q of queries) {
+    const t = q.slice(0, 100);
+    const key = t.toLowerCase();
+    if (!t || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
   }
-  if (launch.bucket === "play" || launch.tags.some((t) => /gaming|steam/i.test(t))) {
-    return `${base} trailer`.slice(0, 100);
-  }
-  return `${base} official`.slice(0, 100);
+  return out.slice(0, 4);
+}
+
+/** @deprecated use buildYoutubeQueries */
+export function buildYoutubeQuery(launch: Launch): string {
+  return buildYoutubeQueries(launch)[0] || cleanText(launch.name);
 }
 
 async function searchYoutube(query: string): Promise<string | null> {
@@ -56,6 +93,18 @@ async function searchYoutube(query: string): Promise<string | null> {
   return `https://www.youtube.com/watch?v=${id}`;
 }
 
+async function searchYoutubeWithFallback(launch: Launch): Promise<{
+  url: string | null;
+  query: string;
+}> {
+  const queries = buildYoutubeQueries(launch);
+  for (const query of queries) {
+    const url = await searchYoutube(query);
+    if (url) return { url, query };
+  }
+  return { url: null, query: queries[0] || launch.name };
+}
+
 function cacheFresh(updatedAt: Date, hasUrl: boolean): boolean {
   const age = Date.now() - updatedAt.getTime();
   return age < (hasUrl ? HIT_TTL_MS : MISS_TTL_MS);
@@ -77,12 +126,20 @@ export async function resolveLaunchVideo(launch: Launch): Promise<string | null>
     const cached = await prisma.launchVideoCache.findUnique({
       where: { launchId: launch.id },
     });
-    if (cached && cacheFresh(cached.updatedAt, Boolean(cached.youtubeUrl))) {
+    if (cached?.youtubeUrl && cacheFresh(cached.updatedAt, true)) {
       return cached.youtubeUrl;
     }
+    // Fresh miss with a known-bad query style → still retry with improved queries
+    const staleMiss =
+      cached &&
+      !cached.youtubeUrl &&
+      cacheFresh(cached.updatedAt, false) &&
+      !cached.query.includes("/");
+    if (staleMiss) {
+      return null;
+    }
 
-    const query = buildYoutubeQuery(launch);
-    const found = await searchYoutube(query);
+    const { url: found, query } = await searchYoutubeWithFallback(launch);
 
     await prisma.launchVideoCache.upsert({
       where: { launchId: launch.id },
