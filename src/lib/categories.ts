@@ -75,15 +75,22 @@ export function launchMatchesCategorySlug(launch: Launch, slug: string): boolean
 
 /** Human label for calendar / lists — prefer browse chip, then subcategory, then bucket. */
 export function categoryLabelForLaunch(launch: Launch): string {
+  return categoryForLaunch(launch)?.label
+    || launch.subcategory
+    || BUCKET_LABEL[launch.bucket]
+    || "Launch";
+}
+
+/** Best matching browse category for a launch (for links / back nav). */
+export function categoryForLaunch(launch: Launch): CategoryDef | undefined {
   for (const cat of CATEGORIES) {
     if (cat.bucket && !cat.subcategory && !cat.tagsAny) {
-      if (launch.bucket === cat.bucket) return cat.label;
+      if (launch.bucket === cat.bucket) return cat;
       continue;
     }
-    if (matchesCategory(launch, cat)) return cat.label;
+    if (matchesCategory(launch, cat)) return cat;
   }
-  if (launch.subcategory) return launch.subcategory;
-  return BUCKET_LABEL[launch.bucket] || "Launch";
+  return CATEGORIES.find((c) => c.bucket === launch.bucket && !c.tagsAny && !c.subcategory);
 }
 
 export function launchesForCategory(slug: string): Launch[] {

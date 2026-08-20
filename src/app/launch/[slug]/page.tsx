@@ -7,7 +7,9 @@ import { ScorePills } from "@/components/ScorePills";
 import { ShareButton } from "@/components/ShareButton";
 import { WatchButton } from "@/components/WatchButton";
 import { LaunchVideo } from "@/components/LaunchVideo";
+import { BackNav } from "@/components/BackNav";
 import { formatReleaseDate } from "@/lib/countdown";
+import { categoryForLaunch } from "@/lib/categories";
 import { resolveLaunchVideo } from "@/lib/launch-video";
 import { brandName, getBrandById, getLaunch, scoreBand } from "@/lib/repo";
 import { STATUS_LABEL } from "@/lib/types";
@@ -25,6 +27,9 @@ export default async function LaunchPage({
   if (!launch) notFound();
 
   const brand = getBrandById(launch.brandId);
+  const category = categoryForLaunch(launch);
+  const backHref = category ? `/category/${category.slug}` : "/";
+  const backLabel = category?.label || "Discover";
   const releaseDate = formatReleaseDate(launch.expectedAt);
   const watches = await getWatches();
   const profile = await getProfile();
@@ -39,12 +44,7 @@ export default async function LaunchPage({
 
   return (
     <AppShell>
-      <div className="mb-4 text-sm text-[var(--muted)]">
-        <Link href="/" className="hover:text-[var(--accent)]">
-          Discover
-        </Link>{" "}
-        / {launch.subcategory}
-      </div>
+      <BackNav href={backHref} label={backLabel} />
 
       <section className="panel rise mb-6 rounded-2xl p-5 md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
