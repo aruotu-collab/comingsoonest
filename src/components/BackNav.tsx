@@ -16,7 +16,7 @@ export function BackNav({
   const router = useRouter();
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+    <div className="mb-5 flex flex-wrap items-center gap-3">
       <button
         type="button"
         onClick={() => {
@@ -34,11 +34,12 @@ export function BackNav({
           }
           router.push(href);
         }}
-        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] px-3 py-1.5 text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--text)]"
+        className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-4 py-2 text-sm font-medium text-[var(--accent)] ring-1 ring-[var(--accent)]/35 transition hover:bg-[var(--accent)] hover:text-[#061018]"
       >
-        ← Back
+        <span aria-hidden>←</span>
+        Back to {label}
       </button>
-      <nav aria-label="Breadcrumb" className="text-[var(--muted)]">
+      <nav aria-label="Breadcrumb" className="text-sm text-[var(--muted)]">
         <Link href="/" className="hover:text-[var(--accent)]">
           Discover
         </Link>
