@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AuthControls } from "@/components/AuthControls";
 import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
-import { CategoryNav } from "@/components/CategoryNav";
+import { SecondaryNav } from "@/components/SecondaryNav";
 import { isAdminEmail } from "@/lib/admin";
 import { totalWatchers } from "@/lib/repo";
 import { getProfile, getWatches } from "@/lib/watches";
@@ -94,7 +94,7 @@ export async function AppShell({
           })}
         </nav>
 
-        <CategoryNav />
+        <SecondaryNav />
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">{children}</main>

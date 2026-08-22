@@ -11,33 +11,6 @@ import { calendarDays, brandName, yearHeatmap } from "@/lib/repo";
 import { getWatches } from "@/lib/watches";
 import { STATUS_LABEL } from "@/lib/types";
 
-const VIEW_FILTERS = [
-  ["all", "All"],
-  ["watching", "Watching"],
-  ["foryou", "For you"],
-] as const;
-
-/** Popular verticals for calendar filtering (keep short). */
-const CALENDAR_CATEGORIES = [
-  "trainers",
-  "gaming",
-  "books",
-  "lego",
-  "perfume",
-  "tech",
-  "beauty",
-  "phones",
-  "headphones",
-] as const;
-
-function calendarHref(opts: { filter: string; category?: string }) {
-  const params = new URLSearchParams();
-  if (opts.filter && opts.filter !== "all") params.set("filter", opts.filter);
-  if (opts.category) params.set("category", opts.category);
-  const q = params.toString();
-  return q ? `/calendar?${q}` : "/calendar";
-}
-
 export default async function CalendarPage({
   searchParams,
 }: {
@@ -65,64 +38,6 @@ export default async function CalendarPage({
           Coming Up on each date — plus On This Day history. The world’s launch
           calendar.
         </p>
-
-        <div className="mt-4 flex flex-wrap gap-2 text-sm">
-          {VIEW_FILTERS.map(([id, label]) => (
-            <Link
-              key={id}
-              href={calendarHref({ filter: id, category: activeCategory })}
-              className={`rounded-full px-3 py-1.5 ${
-                filter === id
-                  ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "bg-white/5 text-[var(--muted)]"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-          <Link
-            href="/calendar/history"
-            className="rounded-full bg-white/5 px-3 py-1.5 text-[var(--muted)]"
-          >
-            History / Time Travel
-          </Link>
-        </div>
-
-        <div className="mt-3">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-[var(--muted)]">
-            Filter by category
-          </p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link
-              href={calendarHref({ filter })}
-              className={`rounded-full px-3 py-1.5 ${
-                !activeCategory
-                  ? "bg-[var(--hot)]/20 text-[var(--hot)]"
-                  : "bg-white/5 text-[var(--muted)]"
-              }`}
-            >
-              All categories
-            </Link>
-            {CALENDAR_CATEGORIES.map((slug) => {
-              const cat = CATEGORIES.find((c) => c.slug === slug);
-              if (!cat) return null;
-              const on = activeCategory === slug;
-              return (
-                <Link
-                  key={slug}
-                  href={calendarHref({ filter, category: slug })}
-                  className={`rounded-full px-3 py-1.5 ${
-                    on
-                      ? "bg-[var(--hot)]/20 text-[var(--hot)]"
-                      : "bg-white/5 text-[var(--muted)]"
-                  }`}
-                >
-                  {cat.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
       </section>
 
       <section className="panel mb-6 rounded-2xl p-4">
