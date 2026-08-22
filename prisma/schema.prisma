@@ -93,3 +93,24 @@ model LaunchVideoCache {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+/** Site analytics for the admin dashboard (pageviews, clicks, visitor IP). */
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String
+  path      String
+  label     String?
+  href      String?
+  ip        String?
+  country   String?
+  userAgent String?
+  visitorId String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([path])
+  @@index([ip])
+  @@index([visitorId])
+}

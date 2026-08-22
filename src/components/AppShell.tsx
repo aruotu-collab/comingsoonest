@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AuthControls } from "@/components/AuthControls";
+import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
 import { CategoryNav } from "@/components/CategoryNav";
+import { isAdminEmail } from "@/lib/admin";
 import { totalWatchers } from "@/lib/repo";
 import { getProfile, getWatches } from "@/lib/watches";
 
@@ -24,9 +27,16 @@ export async function AppShell({
   const watches = await getWatches();
   const profile = await getProfile();
   const watchers = totalWatchers();
+  const showAdmin = isAdminEmail(profile.email);
+  const links = showAdmin
+    ? [...nav, { href: "/admin", label: "Admin" }]
+    : nav;
 
   return (
     <div className="min-h-screen">
+      <Suspense fallback={null}>
+        <AnalyticsBeacon />
+      </Suspense>
       <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <Link href="/" className="min-w-0">
@@ -64,7 +74,7 @@ export async function AppShell({
           aria-label="Main"
           className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {nav.map((item) => {
+          {links.map((item) => {
             const isActive = active === item.href;
             return (
               <Link
@@ -73,7 +83,9 @@ export async function AppShell({
                 className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition ${
                   isActive
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--muted)] hover:text-[var(--text)]"
+                    : item.href === "/admin"
+                      ? "text-[var(--hot)] hover:text-[var(--text)]"
+                      : "text-[var(--muted)] hover:text-[var(--text)]"
                 }`}
               >
                 {item.label}
